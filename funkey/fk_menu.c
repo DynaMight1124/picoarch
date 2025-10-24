@@ -217,9 +217,9 @@ static void read_aspect_ratio(void)
 	case SCALE_SIZE_CROP:
 		menu_aspect_ratio = ASPECT_RATIOS_TYPE_CROPPED;
 		break;
-	case SCALE_SIZE_NONE:
+	/*case SCALE_SIZE_NONE:
 		menu_aspect_ratio = ASPECT_RATIOS_TYPE_NONE;
-		break;
+		break;*/
 	}
 }
 
@@ -238,10 +238,10 @@ static void update_aspect_ratio(void)
 		scale_size = SCALE_SIZE_CROP;
 		scale_filter = SCALE_FILTER_SMOOTH;
 		break;
-	case ASPECT_RATIOS_TYPE_NONE:
+	/*case ASPECT_RATIOS_TYPE_NONE:
 		scale_size = SCALE_SIZE_NONE;
 		scale_filter = SCALE_FILTER_NEAREST;
-		break;
+		break;*/
 	}
 	scale_update_scaler();
 }

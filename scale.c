@@ -423,7 +423,15 @@ static void scale_select_scaler(unsigned w, unsigned h, size_t pitch) {
 		return;
 	};
 
-	current_aspect_ratio = aspect_ratio > 0 ? aspect_ratio : ((double)w / (double)h);
+	double real_ratio = (double)w / (double)h;
+
+	/* Scaled mode: set correct aspect ratio for resolutions up to 320x224 */
+	if (real_ratio <= 10.0f / 7.0f) {
+		current_aspect_ratio = real_ratio;
+	} else {
+		/* 4:3 aspect ratio is forced for exotic resolutions (384x224 for CPS systems, 640x240 for PS1...) */
+		current_aspect_ratio = aspect_ratio > 0 ? aspect_ratio : real_ratio;
+	}
 
 	/* mame2000 sets resolutions / aspect ratio without notifying
 	 * of changes, new should always override old */
@@ -479,8 +487,8 @@ static void scale_select_scaler(unsigned w, unsigned h, size_t pitch) {
 		dst_w = SCREEN_WIDTH;
 		dst_h = SCREEN_HEIGHT;
 		dst_offs = 0;
-	} else if (scale_size == SCALE_SIZE_ASPECT ||
-	           (scale_size == SCALE_SIZE_NONE && (w > SCREEN_WIDTH || h > SCREEN_HEIGHT))) {
+	} else if (scale_size == SCALE_SIZE_ASPECT/* ||
+	           (scale_size == SCALE_SIZE_NONE && (w > SCREEN_WIDTH || h > SCREEN_HEIGHT))*/) {
 		dst_w = SCREEN_WIDTH;
 		dst_h = SCREEN_WIDTH / current_aspect_ratio + 0.5;
 		dst_offs = ((SCREEN_HEIGHT-dst_h)/2) * SCREEN_PITCH;
@@ -490,7 +498,7 @@ static void scale_select_scaler(unsigned w, unsigned h, size_t pitch) {
 			dst_h = SCREEN_HEIGHT;
 			dst_offs = ((SCREEN_WIDTH-dst_w)/2) * SCREEN_BPP;
 		}
-	} else if (scale_size == SCALE_SIZE_NONE) {
+	/*} else if (scale_size == SCALE_SIZE_NONE) {
 		unsigned dst_x = ((SCREEN_WIDTH - w) * SCREEN_BPP / 2);
 		unsigned dst_y = ((SCREEN_HEIGHT - h) / 2);
 		dst_offs = dst_y * SCREEN_PITCH + dst_x;
@@ -501,7 +509,7 @@ static void scale_select_scaler(unsigned w, unsigned h, size_t pitch) {
 			scaler = scale_1x;
 		}
 
-		return;
+		return;*/
 	}
 
 	if (!scaler && w == 160 && h == 144) {
