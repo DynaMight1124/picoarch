@@ -415,6 +415,36 @@ static void scale_sharp_256xXXX_320xXXX(unsigned w, unsigned h, size_t pitch, co
 	}
 }
 
+static void scale_rotate_90ccw(
+	unsigned w, unsigned h, size_t pitch,
+	const void *src_bytes, void *dst_bytes)
+{
+	const uint16_t *src = (const uint16_t *)src_bytes;
+	uint16_t *dst = (uint16_t *)dst_bytes;
+
+	const unsigned rotated_w = h;
+	const unsigned rotated_h = w;
+	const size_t src_pitch_pixels = pitch / sizeof(uint16_t);
+	const size_t dst_pitch_pixels = rotated_w;
+
+	// Clear destination buffer (ensures black borders / no artifacts)
+	memset(dst, 0, rotated_w * rotated_h * sizeof(uint16_t));
+
+	// Perform 90° CCW rotation
+	for (unsigned y = 0; y < h; y++) {
+		const uint16_t *src_row = src + (size_t)y * src_pitch_pixels;
+
+		// Trick: precompute w_minus_1 to avoid signed/unsigned mix
+		const unsigned w_minus_1 = w - 1;
+
+		// Use an index of type size_t to silence GCC’s “undefined behavior” paranoia
+		for (size_t x = 0; x < (size_t)w; x++) {
+			size_t dst_index = ((size_t)(w_minus_1 - x)) * dst_pitch_pixels + y;
+			dst[dst_index] = src_row[x];
+		}
+	}
+}
+
 static void scale_select_scaler(unsigned w, unsigned h, size_t pitch) {
 	double current_aspect_ratio;
 
@@ -583,13 +613,45 @@ void scale_update_scaler(void) {
 	scale_select_scaler(prev.w, prev.h, prev.pitch);
 }
 
-void scale(unsigned w, unsigned h, size_t pitch, const void *src, void *dst) {
+void scale(unsigned w, unsigned h, size_t pitch, const void *src, void *dst)
+{
+	static uint16_t *tmpbuf = NULL;
+	static size_t tmp_size = 0;
+
+	// Re-select the scaling function if the source dimensions or pitch have changed
 	if (w != prev.w || h != prev.h || pitch != prev.pitch) {
 		PA_INFO("Dimensions changed to %dx%d\n", w, h);
 		scale_select_scaler(w, h, pitch);
-		memset(dst, 0, SCREEN_HEIGHT * SCREEN_PITCH);
-		prev.w = w; prev.h = h; prev.pitch = pitch;
+		prev.w = w;
+		prev.h = h;
+		prev.pitch = pitch;
 	}
 
-	scaler(w, h, pitch, src, dst);
+	// ---- Normal (non-rotated) rendering ----
+	if (!rotate_display) {
+		// Directly render the scaled frame into the destination buffer
+		// (no need to clear since scaler() overwrites the entire area)
+		scaler(w, h, pitch, src, dst);
+		return;
+	}
+
+	// ---- Rotated rendering (TATE mode) ----
+	// Compute how much memory is needed for the temporary buffer
+	size_t needed = SCREEN_WIDTH * SCREEN_HEIGHT * sizeof(uint16_t);
+
+	// Allocate or reallocate the temporary buffer if size changed
+	if (tmp_size < needed) {
+		free(tmpbuf);
+		tmpbuf = malloc(needed);
+		tmp_size = needed;
+	}
+
+	// Clear temporary buffer before rendering (prevents pixel artifacts)
+	memset(tmpbuf, 0, needed);
+
+	// Step 1: Render normally into the temporary buffer
+	scaler(w, h, pitch, src, tmpbuf);
+
+	// Step 2: Rotate the rendered frame into the destination buffer
+	scale_rotate_90ccw(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_WIDTH * SCREEN_BPP, tmpbuf, dst);
 }

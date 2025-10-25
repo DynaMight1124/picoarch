@@ -10,6 +10,7 @@ extern int limit_frames;
 extern int enable_audio;
 extern int enable_drc;
 extern int use_srm;
+extern int rotate_display;
 extern unsigned audio_buffer_size;
 extern enum scale_size scale_size;
 extern enum scale_filter scale_filter;

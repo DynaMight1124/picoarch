@@ -578,11 +578,15 @@ static const char *men_scale_size[] = { "Scaled", "Stretched", "Native", NULL};
 
 static const char *men_scale_filter[] = { "Nearest", "Sharp", "Smooth", NULL};
 
+static const char h_rotate_display[] =
+	"Rotate screen 90 degrees CCW (TATE).";
+
 static menu_entry e_menu_video_options[] =
 {
 	mee_onoff_h      ("Show FPS",                 0, show_fps, 1, h_show_fps),
 	mee_onoff_h      ("Show CPU %%",              0, show_cpu, 1, h_show_cpu),
 	mee_enum_h       ("Screen size",              0, scale_size, men_scale_size, h_scale_size),
+	mee_onoff_h      ("Rotate screen",            0, rotate_display, 1, h_rotate_display),
 	mee_enum_h       ("Filter",                   0, scale_filter, men_scale_filter, h_scale_filter),
 	mee_range_h      ("Audio buffer",             0, audio_buffer_size, 1, 15, h_audio_buffer_size),
 	mee_onoff_h      ("Audio adjustment",         0, enable_drc, 1, h_enable_drc),
