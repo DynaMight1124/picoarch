@@ -476,7 +476,7 @@ static void scale_select_scaler(unsigned w, unsigned h, size_t pitch) {
 		blend_args.blend_line = NULL;
 	}
 
-	if (scale_size == SCALE_SIZE_CROP) {
+	if (scale_size == SCALE_SIZE_NATIVE) {
 		int dst_x, dst_y;
 		src_offs = 0;
 
@@ -517,8 +517,7 @@ static void scale_select_scaler(unsigned w, unsigned h, size_t pitch) {
 		dst_w = SCREEN_WIDTH;
 		dst_h = SCREEN_HEIGHT;
 		dst_offs = 0;
-	} else if (scale_size == SCALE_SIZE_ASPECT/* ||
-	           (scale_size == SCALE_SIZE_NONE && (w > SCREEN_WIDTH || h > SCREEN_HEIGHT))*/) {
+	} else if (scale_size == SCALE_SIZE_ASPECT) {
 		dst_w = SCREEN_WIDTH;
 		dst_h = SCREEN_WIDTH / current_aspect_ratio + 0.5;
 		dst_offs = ((SCREEN_HEIGHT-dst_h)/2) * SCREEN_PITCH;
@@ -528,18 +527,6 @@ static void scale_select_scaler(unsigned w, unsigned h, size_t pitch) {
 			dst_h = SCREEN_HEIGHT;
 			dst_offs = ((SCREEN_WIDTH-dst_w)/2) * SCREEN_BPP;
 		}
-	/*} else if (scale_size == SCALE_SIZE_NONE) {
-		unsigned dst_x = ((SCREEN_WIDTH - w) * SCREEN_BPP / 2);
-		unsigned dst_y = ((SCREEN_HEIGHT - h) / 2);
-		dst_offs = dst_y * SCREEN_PITCH + dst_x;
-
-		if (pitch == SCREEN_PITCH) {
-			scaler = scale_memcpy;
-		} else {
-			scaler = scale_1x;
-		}
-
-		return;*/
 	}
 
 	if (!scaler && w == 160 && h == 144) {
@@ -599,7 +586,7 @@ static void scale_select_scaler(unsigned w, unsigned h, size_t pitch) {
 		scaler = scale_1x;
 	}
 
-	if (scale_size == SCALE_SIZE_CROP) {
+	if (scale_size == SCALE_SIZE_NATIVE) {
 		if (w <= SCREEN_WIDTH && h <= SCREEN_HEIGHT) {
 			crop_scaler = scale_1x;
 		} else {

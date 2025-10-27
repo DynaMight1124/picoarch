@@ -18,10 +18,9 @@
 #define SCREEN_PITCH (SCREEN_BPP * SCREEN_WIDTH)
 
 enum scale_size {
-	//SCALE_SIZE_NONE,
 	SCALE_SIZE_ASPECT,
 	SCALE_SIZE_FULL,
-	SCALE_SIZE_CROP,
+	SCALE_SIZE_NATIVE,
 };
 
 enum scale_filter {

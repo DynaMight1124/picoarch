@@ -217,7 +217,7 @@ void set_defaults(void)
 
 	/* Sets better defaults for small screen */
 	if (SCREEN_WIDTH == 240) {
-		scale_size = SCALE_SIZE_CROP;
+		scale_size = SCALE_SIZE_NATIVE;
 		scale_filter = SCALE_FILTER_SMOOTH;
 
 		if (!strcmp(core_name, "gambatte") ||

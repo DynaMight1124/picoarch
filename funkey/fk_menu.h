@@ -80,11 +80,9 @@ typedef enum{
 #ifdef HAS_MENU_ASPECT_RATIO
 ///------ Definition of the different aspect ratios
 #define ASPECT_RATIOS \
-    /* X(ASPECT_RATIOS_TYPE_MANUAL, "MANUAL ZOOM") */ \
     X(ASPECT_RATIOS_TYPE_STRETCHED, "STRETCHED") \
-    X(ASPECT_RATIOS_TYPE_CROPPED, "NATIVE") \
+    X(ASPECT_RATIOS_TYPE_NATIVE, "NATIVE") \
     X(ASPECT_RATIOS_TYPE_SCALED, "SCALED") \
-    /* X(ASPECT_RATIOS_TYPE_NONE, "NONE") */ \
     X(NB_ASPECT_RATIOS_TYPES, "")
 
 ////------ Enumeration of the different aspect ratios ------
