@@ -92,11 +92,6 @@ static inline int gcd(int a, int b) {
 
 static void scale_null(unsigned w, unsigned h, size_t pitch, const void *src, void *dst) {}
 
-static void scale_memcpy(unsigned w, unsigned h, size_t pitch, const void *src, void *dst) {
-	dst += dst_offs;
-	memcpy(dst, src, h * pitch);
-}
-
 static void scale_1x(unsigned w, unsigned h, size_t pitch, const void *src, void *dst) {
 	dst += dst_offs;
 
@@ -153,6 +148,13 @@ static void scale_nearest(unsigned w, unsigned h, size_t pitch, const void *src,
 		} else {
 			copy = true;
 		}
+	}
+
+	// --- Fix: ensure last destination line is written ---
+	{
+		uint8_t *base = (uint8_t *)dst - SCREEN_PITCH; // go back one line
+		uint8_t *last = base + SCREEN_PITCH;           // point to final line
+		memcpy(last, base, SCREEN_PITCH);
 	}
 }
 
@@ -268,6 +270,13 @@ static void scale_blend(unsigned w, unsigned h, size_t pitch, const void *src, v
 
 		dy -= rat_dst_h;
 		src += pitch;
+	}
+
+	// --- Fix: ensure last destination line is written ---
+	{
+		uint8_t *base = (uint8_t *)dst - SCREEN_PITCH; // go back one line
+		uint8_t *last = base + SCREEN_PITCH;           // point to final line
+		memcpy(last, base, SCREEN_PITCH);
 	}
 }
 
@@ -455,7 +464,7 @@ static void scale_select_scaler(unsigned w, unsigned h, size_t pitch) {
 
 	double real_ratio = (double)w / (double)h;
 
-	/* Scaled mode: set correct aspect ratio for resolutions up to 320x224 */
+	/* Scaled mode: set correct aspect ratio for resolutions up to 320x240 */
 	if (real_ratio <= 10.0f / 7.0f) {
 		current_aspect_ratio = real_ratio;
 	} else {
@@ -513,11 +522,11 @@ static void scale_select_scaler(unsigned w, unsigned h, size_t pitch) {
 		}
 
 		dst_offs = dst_y * SCREEN_PITCH + dst_x * SCREEN_BPP;
-	} else if (scale_size == SCALE_SIZE_FULL) {
+	} else if (scale_size == SCALE_SIZE_STRETCHED) {
 		dst_w = SCREEN_WIDTH;
 		dst_h = SCREEN_HEIGHT;
 		dst_offs = 0;
-	} else if (scale_size == SCALE_SIZE_ASPECT) {
+	} else if (scale_size == SCALE_SIZE_SCALED) {
 		dst_w = SCREEN_WIDTH;
 		dst_h = SCREEN_WIDTH / current_aspect_ratio + 0.5;
 		dst_offs = ((SCREEN_HEIGHT-dst_h)/2) * SCREEN_PITCH;
@@ -527,10 +536,121 @@ static void scale_select_scaler(unsigned w, unsigned h, size_t pitch) {
 			dst_h = SCREEN_HEIGHT;
 			dst_offs = ((SCREEN_WIDTH-dst_w)/2) * SCREEN_BPP;
 		}
+	} else if (scale_size == SCALE_SIZE_CROPPED) {
+		// --- Mode CROPPED (maximize height, keep aspect ratio, center both axes) ---
+		double src_aspect = (double)w / (double)h;
+
+		// Use full screen height
+		dst_h = SCREEN_HEIGHT;
+		dst_w = (unsigned)(dst_h * src_aspect + 0.5);
+
+		// Avoid re-scaling games close to 320px width
+		if ((w == 304 || w == 320 || w == 384) && h <= 240) {
+			dst_w = w;
+			dst_h = h;
+		}
+
+		// Limit width to avoid excessive overscan
+		if (dst_w > 320) {
+			dst_w = 320;
+			// Do not apply aspect ratio for PS1 (must be always 4:3) and CPS1/2/3 (force 10:7)
+			if (!strstr(core_name, "pcsx") && (w != 384 && h != 224)) {
+				dst_h = (unsigned)(dst_w / src_aspect + 0.5);
+			}
+		}
+
+		int crop_x = 0;
+		int visible_w = SCREEN_WIDTH; // e.g. 240 px display width
+		src_offs = 0;
+		w_offs = 0;
+
+		// --- Determine crop in source ---
+		if (dst_w > visible_w) {
+			crop_x = (dst_w - visible_w) / 2;
+
+			int visual_center_fix = 0;
+
+			// Base per-system offsets (empirical)
+			if      (w == 160 && h == 102)   { visual_center_fix = 20; } // Lynx
+			else if (w == 160 && h == 144)   { visual_center_fix = 5;  } // GB, GBC, GG
+			else if (w == 160 && h == 152)   { visual_center_fix = 2;  } // NGP
+			else if (w == 224)               { visual_center_fix = 12; } // WonderSwan
+			else if (w == 240)               { visual_center_fix = 10; } // GBA
+			else if (w == 384)               { visual_center_fix = -8; } // CPS
+			else if (w == 512)               { visual_center_fix = -24;} // PS1
+			else if (w == 640)               { visual_center_fix = -40;} // PS1 alt
+
+			crop_x -= visual_center_fix;
+
+			if (crop_x < 0)
+				crop_x = 0;
+			if (crop_x + visible_w > (int)dst_w)
+				crop_x = dst_w - visible_w;
+
+			src_offs = crop_x * SCREEN_BPP;
+
+			PA_INFO("[CROPPED] src=%ux%u dst=%ux%u crop_x=%d visual_fix=%d\n",
+					w, h, dst_w, dst_h, crop_x, visual_center_fix);
+		}
+
+		// --- Center vertically only ---
+		int dst_x = (SCREEN_WIDTH - visible_w) / 2;
+		int dst_y = (SCREEN_HEIGHT - (short)dst_h) / 2;
+		if (dst_x < 0) dst_x = 0;
+		if (dst_y < 0) dst_y = 0;
+
+		dst_offs = dst_y * SCREEN_PITCH + dst_x * SCREEN_BPP;
+
+		// --- Optimization: skip scaling if src == dst (no transform needed) ---
+		bool native_match = false;
+		if (abs((int)dst_w - (int)w) <= 1 && abs((int)dst_h - (int)h) <= 1) {
+			dst_w = w;
+			dst_h = h;
+			native_match = true;
+		}
+
+		// --- Select scaler ---
+		if (native_match) {
+			scaler = scale_1x; // direct copy, no resampling
+		} else if (scale_filter == SCALE_FILTER_NEAREST) {
+			scaler = scale_nearest;
+		} else if (scale_filter == SCALE_FILTER_SHARP || scale_filter == SCALE_FILTER_SMOOTH) {
+			int gcd_w, div_w, gcd_h, div_h;
+			blend_args.blend_line = calloc(w, sizeof(uint16_t));
+
+			gcd_w = gcd(w, dst_w);
+			blend_args.w_ratio_in = w / gcd_w;
+			blend_args.w_ratio_out = dst_w / gcd_w;
+
+			div_w = (blend_args.w_ratio_out + 2) / 5;
+			blend_args.w_bp[0] = div_w;
+			blend_args.w_bp[1] = blend_args.w_ratio_out >> 1;
+
+			gcd_h = gcd(h, dst_h);
+			blend_args.h_ratio_in = h / gcd_h;
+			blend_args.h_ratio_out = dst_h / gcd_h;
+
+			div_h = (blend_args.h_ratio_out + 2) / 5;
+			blend_args.h_bp[0] = div_h;
+			blend_args.h_bp[1] = blend_args.h_ratio_out >> 1;
+
+			scaler = scale_blend;
+		} else {
+			scaler = scale_1x;
+		}
+
+		// --- Switch to cropped scaler if needed ---
+		if (dst_w > visible_w) {
+			crop_scaler = scaler;
+			scaler = scale_crop;
+		}
+
+		PA_INFO("[CROPPED] src=%ux%u dst=%ux%u crop_x=%d offs=%d,%d\n",
+				w, h, dst_w, dst_h, crop_x, dst_x, dst_y);
 	}
 
 	if (!scaler && w == 160 && h == 144) {
-		if (scale_size == SCALE_SIZE_ASPECT && scale_filter == SCALE_FILTER_SHARP) {
+		if (scale_size == SCALE_SIZE_SCALED && scale_filter == SCALE_FILTER_SHARP) {
 			unsigned dst_x = ((SCREEN_WIDTH - 240) * SCREEN_BPP / 2);
 			unsigned dst_y = ((SCREEN_HEIGHT - 216) / 2);
 			dst_offs = dst_y * SCREEN_PITCH + dst_x;
@@ -548,7 +668,7 @@ static void scale_select_scaler(unsigned w, unsigned h, size_t pitch) {
 
 		if (!scaler &&
 		    w == 256 &&
-		    (current_aspect_ratio == 4.0f / 3.0f || scale_size == SCALE_SIZE_FULL))
+		    (current_aspect_ratio == 4.0f / 3.0f || scale_size == SCALE_SIZE_STRETCHED))
 		{
 			scaler = scale_sharp_256xXXX_320xXXX;
 			return;

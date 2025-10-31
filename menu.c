@@ -530,9 +530,9 @@ static const char h_audio_buffer_size[]        =
 	"cost of delayed sound.";
 
 static const char h_scale_size[]        =
-	"How much to stretch the screen when scaling. Scaled\n"
-	"keeps the correct aspect ratio. Stretched uses the\n"
-	"whole screen. Native does no stretching.";
+	"How much to stretch the screen when scaling. Native\n"
+	"does no stretching. Scaled uses the correct aspect\n"
+	"ratio. Stretched uses the whole screen.";
 
 static const char h_scale_filter[]        =
 	"When stretching, how missing pixels are filled.\n"
@@ -544,7 +544,7 @@ static const char h_use_srm[]        =
 	"compatibility with mainline retroarch saves.\n"
 	"Save file compression needs to be off in retroarch.";
 
-static const char *men_scale_size[] = { "Scaled", "Stretched", "Native", NULL};
+static const char *men_scale_size[] = { "Native", "Scaled", "Stretched", NULL};
 #else
 static const char h_enable_drc[]      =
 	"Dynamically adjusts audio rate for\n"
@@ -556,10 +556,10 @@ static const char h_audio_buffer_size[]        =
 	"crackling at the cost of delayed sound.";
 
 static const char h_scale_size[]        =
-	"How to fill the display. Scaled keeps\n"
-	"the correct aspect ratio. Stretched\n"
-	"uses the whole screen. Native does\n"
-	"no stretching.";
+	"Scale modes. Native does no stretching.\n"
+	"Scaled keeps the correct aspect ratio.\n"
+	"Stretched uses the whole screen.\n"
+	"Cropped hides pixels on the sides.";
 
 static const char h_scale_filter[]        =
 	"When stretching, how missing pixels\n"
@@ -573,7 +573,7 @@ static const char h_use_srm[]        =
 	"retroarch saves. Save file compression\n"
 	"needs to be off in retroarch.";
 
-static const char *men_scale_size[] = { "Scaled", "Stretched", "Native", NULL};
+static const char *men_scale_size[] = { "Native", "Scaled", "Stretched", "Cropped", NULL};
 #endif
 
 static const char *men_scale_filter[] = { "Nearest", "Sharp", "Smooth", NULL};

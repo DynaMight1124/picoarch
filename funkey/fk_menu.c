@@ -208,14 +208,17 @@ static void draw_progress_bar(SDL_Surface * surface, uint16_t x, uint16_t y, uin
 static void read_aspect_ratio(void)
 {
 	switch (scale_size) {
-	case SCALE_SIZE_FULL:
+	case SCALE_SIZE_STRETCHED:
 		menu_aspect_ratio = ASPECT_RATIOS_TYPE_STRETCHED;
 		break;
-	case SCALE_SIZE_ASPECT:
+	case SCALE_SIZE_SCALED:
 		menu_aspect_ratio = ASPECT_RATIOS_TYPE_SCALED;
 		break;
 	case SCALE_SIZE_NATIVE:
 		menu_aspect_ratio = ASPECT_RATIOS_TYPE_NATIVE;
+		break;
+	case SCALE_SIZE_CROPPED:
+		menu_aspect_ratio = ASPECT_RATIOS_TYPE_CROPPED;
 		break;
 	}
 }
@@ -224,15 +227,19 @@ static void update_aspect_ratio(void)
 {
 	switch (menu_aspect_ratio) {
 	case ASPECT_RATIOS_TYPE_STRETCHED:
-		scale_size = SCALE_SIZE_FULL;
+		scale_size = SCALE_SIZE_STRETCHED;
 		scale_filter = SCALE_FILTER_SMOOTH;
 		break;
 	case ASPECT_RATIOS_TYPE_SCALED:
-		scale_size = SCALE_SIZE_ASPECT;
+		scale_size = SCALE_SIZE_SCALED;
 		scale_filter = SCALE_FILTER_SMOOTH;
 		break;
 	case ASPECT_RATIOS_TYPE_NATIVE:
 		scale_size = SCALE_SIZE_NATIVE;
+		scale_filter = SCALE_FILTER_SMOOTH;
+		break;
+	case ASPECT_RATIOS_TYPE_CROPPED:
+		scale_size = SCALE_SIZE_CROPPED;
 		scale_filter = SCALE_FILTER_SMOOTH;
 		break;
 	}
