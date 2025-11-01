@@ -6,6 +6,9 @@
 #include "options.h"
 #include "scale.h"
 
+int video_width  = 0;
+int video_height = 0;
+
 typedef void (*scaler_t)(unsigned w, unsigned h, size_t pitch, const void *src, void *dst);
 
 struct dimensions {
@@ -537,18 +540,19 @@ static void scale_select_scaler(unsigned w, unsigned h, size_t pitch) {
 			dst_offs = ((SCREEN_WIDTH-dst_w)/2) * SCREEN_BPP;
 		}
 	} else if (scale_size == SCALE_SIZE_CROPPED) {
+		// Perfect 1:1 passthrough: behave exactly like NATIVE
+		if (w == 320 || w == 384 || h == 240) {
+			scale_size = SCALE_SIZE_NATIVE;  // force reuse of the native path
+			scale_select_scaler(w, h, pitch);
+			return;
+		}
+
 		// --- Mode CROPPED (maximize height, keep aspect ratio, center both axes) ---
 		double src_aspect = (double)w / (double)h;
 
 		// Use full screen height
 		dst_h = SCREEN_HEIGHT;
 		dst_w = (unsigned)(dst_h * src_aspect + 0.5);
-
-		// Avoid re-scaling games close to 320px width
-		if ((w == 304 || w == 320 || w == 384) && h <= 240) {
-			dst_w = w;
-			dst_h = h;
-		}
 
 		// Limit width to avoid excessive overscan
 		if (dst_w > 320) {
@@ -571,12 +575,14 @@ static void scale_select_scaler(unsigned w, unsigned h, size_t pitch) {
 			int visual_center_fix = 0;
 
 			// Base per-system offsets (empirical)
-			if      (w == 160 && h == 102)   { visual_center_fix = 20; } // Lynx
+			if      (w == 96 && h == 64)     { visual_center_fix = 30; } // Pokémon Mini
+			else if (w == 160 && h == 102)   { visual_center_fix = 20; } // Lynx
 			else if (w == 160 && h == 144)   { visual_center_fix = 5;  } // GB, GBC, GG
 			else if (w == 160 && h == 152)   { visual_center_fix = 2;  } // NGP
 			else if (w == 224)               { visual_center_fix = 12; } // WonderSwan
 			else if (w == 240)               { visual_center_fix = 10; } // GBA
-			else if (w == 384)               { visual_center_fix = -8; } // CPS
+			else if (w == 304)               { visual_center_fix = 2;  } // Neo-Geo
+			else if (w == 384)               { visual_center_fix = -8; } // CPS1/2/3
 			else if (w == 512)               { visual_center_fix = -24;} // PS1
 			else if (w == 640)               { visual_center_fix = -40;} // PS1 alt
 
@@ -722,6 +728,9 @@ void scale_update_scaler(void) {
 
 void scale(unsigned w, unsigned h, size_t pitch, const void *src, void *dst)
 {
+	video_width  = w;
+	video_height = h;
+
 	static uint16_t *tmpbuf = NULL;
 	static size_t tmp_size = 0;
 
@@ -729,9 +738,7 @@ void scale(unsigned w, unsigned h, size_t pitch, const void *src, void *dst)
 	if (w != prev.w || h != prev.h || pitch != prev.pitch) {
 		PA_INFO("Dimensions changed to %dx%d\n", w, h);
 		scale_select_scaler(w, h, pitch);
-		prev.w = w;
-		prev.h = h;
-		prev.pitch = pitch;
+		prev.w = w; prev.h = h; prev.pitch = pitch;
 	}
 
 	// ---- Normal (non-rotated) rendering ----

@@ -34,6 +34,9 @@
 #include "scale.h"
 #include "plat.h"
 
+extern int video_width;
+extern int video_height;
+
 /// -------------- DEFINES --------------
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
@@ -1134,9 +1137,11 @@ int FK_RunMenu(SDL_Surface *screen)
 #ifdef HAS_MENU_ASPECT_RATIO
 						  if(idx_menus[menuItem] == MENU_TYPE_ASPECT_RATIO){
 							MENU_DEBUG_PRINTF("Aspect Ratio DOWN\n");
-							menu_aspect_ratio = (!menu_aspect_ratio)?(NB_ASPECT_RATIOS_TYPES-1):(menu_aspect_ratio-1);
+							do {
+								menu_aspect_ratio = (!menu_aspect_ratio)?(NB_ASPECT_RATIOS_TYPES-1):(menu_aspect_ratio-1);
+							} while ((video_width == 320 || video_width == 384 || video_height == 240) &&
+									menu_aspect_ratio == ASPECT_RATIOS_TYPE_CROPPED);
 							update_aspect_ratio();
-
 							/// ------ Refresh screen ------
 							screen_refresh = 1;
 						} else
@@ -1205,7 +1210,10 @@ int FK_RunMenu(SDL_Surface *screen)
 #ifdef HAS_MENU_ASPECT_RATIO
 						  if(idx_menus[menuItem] == MENU_TYPE_ASPECT_RATIO){
 							MENU_DEBUG_PRINTF("Aspect Ratio UP\n");
-							menu_aspect_ratio = (menu_aspect_ratio+1)%NB_ASPECT_RATIOS_TYPES;
+							do {
+								menu_aspect_ratio = (menu_aspect_ratio+1)%NB_ASPECT_RATIOS_TYPES;
+							} while ((video_width == 320 || video_width == 384 || video_height == 240) &&
+									menu_aspect_ratio == ASPECT_RATIOS_TYPE_CROPPED);
 							update_aspect_ratio();
 							/// ------ Refresh screen ------
 							screen_refresh = 1;
@@ -1497,8 +1505,21 @@ void FK_NextAspectRatio(void)
 	update_aspect_ratio();
 	scale_update_scaler();
 	plat_video_menu_leave();
+
+	// --- Fix notification text ---
+	const char *notif_name = aspect_ratio_name[menu_aspect_ratio];
+
+	// Replace CROPPED with NATIVE for 320/384 width or 240 height games
+	if (video_width == 320 || video_width == 384 || video_height == 240) {
+		// Check for the actual CROPPED string (uppercase)
+	if (strcmp(notif_name, "CROPPED") == 0) {
+		notif_name = "NATIVE";
+		}
+	}
+
 	snprintf(shell_cmd, 100, "%s %d \"    DISPLAY MODE: %s\"",
-    SHELL_CMD_NOTIF_SET, NOTIF_SECONDS_DISP, aspect_ratio_name[menu_aspect_ratio]);
+	SHELL_CMD_NOTIF_SET, NOTIF_SECONDS_DISP, notif_name);
+
 	fp = popen(shell_cmd, "r");
 	if (fp == NULL) {
 		printf("Failed to run command %s\n", shell_cmd);

@@ -544,7 +544,7 @@ static const char h_use_srm[]        =
 	"compatibility with mainline retroarch saves.\n"
 	"Save file compression needs to be off in retroarch.";
 
-static const char *men_scale_size[] = { "Native", "Scaled", "Stretched", NULL};
+static const char *men_scale_size_full[] = { "Native", "Scaled", "Stretched", NULL};
 #else
 static const char h_enable_drc[]      =
 	"Dynamically adjusts audio rate for\n"
@@ -573,7 +573,8 @@ static const char h_use_srm[]        =
 	"retroarch saves. Save file compression\n"
 	"needs to be off in retroarch.";
 
-static const char *men_scale_size[] = { "Native", "Scaled", "Stretched", "Cropped", NULL};
+static const char *men_scale_size_full[] = { "Native", "Scaled", "Stretched", "Cropped", NULL };
+static const char *men_scale_size_nocrop[] = { "Native", "Scaled", "Stretched", NULL };
 #endif
 
 static const char *men_scale_filter[] = { "Nearest", "Sharp", "Smooth", NULL};
@@ -585,7 +586,7 @@ static menu_entry e_menu_video_options[] =
 {
 	mee_onoff_h      ("Show FPS",                 0, show_fps, 1, h_show_fps),
 	mee_onoff_h      ("Show CPU %%",              0, show_cpu, 1, h_show_cpu),
-	mee_enum_h       ("Screen size",              0, scale_size, men_scale_size, h_scale_size),
+	mee_enum_h       ("Screen size",              0, scale_size, men_scale_size_full, h_scale_size),
 	mee_onoff_h      ("Rotate screen",            0, rotate_display, 1, h_rotate_display),
 	mee_enum_h       ("Filter",                   0, scale_filter, men_scale_filter, h_scale_filter),
 	mee_range_h      ("Audio buffer",             0, audio_buffer_size, 1, 15, h_audio_buffer_size),
@@ -596,6 +597,15 @@ static menu_entry e_menu_video_options[] =
 static int menu_loop_video_options(int id, int keys)
 {
 	static int sel = 0;
+
+	// --- Hide CROPPED for 320w / 384w / 240h games ---
+	extern int video_width;
+	extern int video_height;
+
+	if (video_width == 320 || video_width == 384 || video_height == 240)
+		e_menu_video_options[2].data = men_scale_size_nocrop;   // index 2 = "Screen size"
+	else
+		e_menu_video_options[2].data = men_scale_size_full;
 
 	me_loop(e_menu_video_options, &sel);
 	plat_reinit();
