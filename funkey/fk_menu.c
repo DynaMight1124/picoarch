@@ -1512,8 +1512,8 @@ void FK_NextAspectRatio(void)
 	// Replace CROPPED with NATIVE for 320/384 width or 240 height games
 	if (video_width == 320 || video_width == 384 || video_height == 240) {
 		// Check for the actual CROPPED string (uppercase)
-	if (strcmp(notif_name, "CROPPED") == 0) {
-		notif_name = "NATIVE";
+		if (strcmp(notif_name, "CROPPED") == 0) {
+			notif_name = "NATIVE";
 		}
 	}
 

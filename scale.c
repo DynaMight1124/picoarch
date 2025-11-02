@@ -475,7 +475,7 @@ static void scale_select_scaler(unsigned w, unsigned h, size_t pitch) {
 		current_aspect_ratio = aspect_ratio > 0 ? aspect_ratio : real_ratio;
 	}
 
-	/* mame2000 sets resolutions / aspect ratio without notifying
+	/* MAME 2000 sets resolutions / aspect ratio without notifying
 	 * of changes, new should always override old */
 	if (!strcmp(core_name, "mame2000")) {
 		current_aspect_ratio = ((double)w / (double)h);
@@ -540,74 +540,111 @@ static void scale_select_scaler(unsigned w, unsigned h, size_t pitch) {
 			dst_offs = ((SCREEN_WIDTH-dst_w)/2) * SCREEN_BPP;
 		}
 	} else if (scale_size == SCALE_SIZE_CROPPED) {
-		// Perfect 1:1 passthrough: behave exactly like NATIVE
+		/* Perfect 1:1 passthrough: behave exactly like NATIVE for trivial cases */
 		if (w == 320 || w == 384 || h == 240) {
-			scale_size = SCALE_SIZE_NATIVE;  // force reuse of the native path
+			scale_size = SCALE_SIZE_NATIVE;  /* force reuse of the native path */
 			scale_select_scaler(w, h, pitch);
 			return;
 		}
 
-		// --- Mode CROPPED (maximize height, keep aspect ratio, center both axes) ---
+		/* Mode CROPPED (maximize height, keep aspect ratio, center both axes) */
 		double src_aspect = (double)w / (double)h;
 
-		// Use full screen height
+		/* Use full screen height */
 		dst_h = SCREEN_HEIGHT;
 		dst_w = (unsigned)(dst_h * src_aspect + 0.5);
 
-		// Limit width to avoid excessive overscan
+		/* Limit width to avoid excessive overscan */
 		if (dst_w > 320) {
 			dst_w = 320;
-			// Do not apply aspect ratio for PS1 (must be always 4:3) and CPS1/2/3 (force 10:7)
+			/* Do not apply aspect ratio for PS1 (must be always 4:3) and CPS1/2/3 (force 10:7) */
 			if (!strstr(core_name, "pcsx") && (w != 384 && h != 224)) {
 				dst_h = (unsigned)(dst_w / src_aspect + 0.5);
 			}
 		}
 
 		int crop_x = 0;
-		int visible_w = SCREEN_WIDTH; // e.g. 240 px display width
+		int visible_w = SCREEN_WIDTH; /* e.g. 240 px display width */
 		src_offs = 0;
 		w_offs = 0;
 
-		// --- Determine crop in source ---
-		if (dst_w > visible_w) {
-			crop_x = (dst_w - visible_w) / 2;
+		/* Determine whether we will perform horizontal cropping.
+		 * Normally cropping happens when the computed dst_w is wider than the visible screen.
+		 * However some cores (MAME 2000) may provide portrait sources (240x320) and we still
+		 * want to apply certain visual center fixes for these; handle those safely below.
+		 */
+		bool will_crop = (dst_w > visible_w);
+
+		/* If portrait vertical game for MAME 2000 (240x320) it may need the visual fix.
+		 * We treat it specially: we do NOT perform a real "crop" (dst_w <= visible_w),
+		 * but we still allow a small horizontal centering adjustment (visual_center_fix).
+		 * This is safe because we clamp the computed offsets afterwards.
+		 */
+		bool special_portrait_mame = (!strcmp(core_name, "mame2000") && w == 240 && h == 320);
+
+		if (will_crop || special_portrait_mame) {
+			/* compute nominal crop center */
+			crop_x = (dst_w > visible_w) ? (dst_w - visible_w) / 2 : 0;
 
 			int visual_center_fix = 0;
 
-			// Base per-system offsets (empirical)
-			if      (w == 96 && h == 64)     { visual_center_fix = 30; } // Pokémon Mini
-			else if (w == 160 && h == 102)   { visual_center_fix = 20; } // Lynx
-			else if (w == 160 && h == 144)   { visual_center_fix = 5;  } // GB, GBC, GG
-			else if (w == 160 && h == 152)   { visual_center_fix = 2;  } // NGP
-			else if (w == 224)               { visual_center_fix = 12; } // WonderSwan
-			else if (w == 240)               { visual_center_fix = 10; } // GBA
-			else if (w == 304)               { visual_center_fix = 2;  } // Neo-Geo
-			else if (w == 384)               { visual_center_fix = -8; } // CPS1/2/3
-			else if (w == 512)               { visual_center_fix = -24;} // PS1
-			else if (w == 640)               { visual_center_fix = -40;} // PS1 alt
+			/* Base per-system offsets (empirical) */
+			if      (w == 96 && h == 64)   { visual_center_fix = 30; } /* Pokémon Mini */
+			else if (w == 160 && h == 102) { visual_center_fix = 20; } /* Lynx */
+			else if (w == 160 && h == 144) { visual_center_fix = 5;  } /* GB, GBC, GG */
+			else if (w == 160 && h == 152) { visual_center_fix = 2;  } /* NGP */
+			else if (w == 224)             { visual_center_fix = 12; } /* WonderSwan */
+			else if (w == 240)             { visual_center_fix = 10; } /* GBA */
+			else if (w == 304)             { visual_center_fix = 2;  } /* Neo-Geo */
+			else if (w == 384)             { visual_center_fix = -8; } /* CPS1/2/3 */
+			else if (w == 512)             { visual_center_fix = -24;} /* PS1 */
+			else if (w == 640)             { visual_center_fix = -40;} /* PS1 alt */
 
+			/* Apply the visual center fix */
 			crop_x -= visual_center_fix;
 
-			if (crop_x < 0)
-				crop_x = 0;
-			if (crop_x + visible_w > (int)dst_w)
-				crop_x = dst_w - visible_w;
+			/* Clamp crop_x to safe range. Always ensure we do not generate negative or out-of-range offsets. */
+			if (crop_x < 0) crop_x = 0;
+			if (dst_w >= visible_w) {
+				if (crop_x + visible_w > (int)dst_w)
+					crop_x = dst_w - visible_w;
+			} else {
+				/* if dst_w < visible_w (no real crop) ensure crop_x is within source bounds */
+				if (crop_x + visible_w > (int)dst_w)
+					crop_x = 0; /* fallback to center / no shift */
+			}
 
+			/* compute source offset in bytes, and optional w_offs (used by some native/crop logic) */
 			src_offs = crop_x * SCREEN_BPP;
 
-			PA_INFO("[CROPPED] src=%ux%u dst=%ux%u crop_x=%d visual_fix=%d\n",
+			/* w_offs previously used when dst_x < 0 in native; keep 0 here unless special handling required */
+			w_offs = 0;
+
+			PA_INFO("[CROPPED] compute crop: src=%ux%u dst=%ux%u crop_x=%d visual_fix=%d\n",
 					w, h, dst_w, dst_h, crop_x, visual_center_fix);
 		}
 
-		// --- Center vertically only ---
+		/* Center vertically only */
 		int dst_x = (SCREEN_WIDTH - visible_w) / 2;
 		int dst_y = (SCREEN_HEIGHT - (short)dst_h) / 2;
 		if (dst_x < 0) dst_x = 0;
 		if (dst_y < 0) dst_y = 0;
 
+		/* If we actually have a crop (dst_w > visible_w) then we render at left of visible area
+		 * and the crop_scaler will read from src + src_offs; dst_x should remain 0 (we want the
+		 * visible rectangle to be located starting at 0). For other cases, we center horizontally.
+		 */
+		if (dst_w > visible_w) {
+			dst_x = 0;
+		} else {
+			/* center the smaller rendered area in the visible width */
+			dst_x = (visible_w - (int)dst_w) / 2;
+			if (dst_x < 0) dst_x = 0;
+		}
+
 		dst_offs = dst_y * SCREEN_PITCH + dst_x * SCREEN_BPP;
 
-		// --- Optimization: skip scaling if src == dst (no transform needed) ---
+		/* Optimization: skip scaling if src == dst (no transform needed) */
 		bool native_match = false;
 		if (abs((int)dst_w - (int)w) <= 1 && abs((int)dst_h - (int)h) <= 1) {
 			dst_w = w;
@@ -615,43 +652,78 @@ static void scale_select_scaler(unsigned w, unsigned h, size_t pitch) {
 			native_match = true;
 		}
 
-		// --- Select scaler ---
+		/* After potential native_match change, recompute dst_x/dst_offs/src_offs safely again
+		 * (this prevents stale offsets that could point outside the framebuffer).
+		 */
 		if (native_match) {
-			scaler = scale_1x; // direct copy, no resampling
+			if (dst_w > visible_w) {
+				/* cropping still applies */
+				dst_x = 0;
+			} else {
+				dst_x = (visible_w - (int)dst_w) / 2;
+				if (dst_x < 0) dst_x = 0;
+			}
+			dst_offs = dst_y * SCREEN_PITCH + dst_x * SCREEN_BPP;
+
+			/* If we changed the logical w used by scalers, be conservative and reset w_offs */
+			w_offs = 0;
+			/* src_offs already clamped above */
+		}
+
+		/* Select scaler - make blend buffer allocation use safe size (max of src/dst width) */
+		if (native_match) {
+			scaler = scale_1x; /* direct copy, no resampling */
 		} else if (scale_filter == SCALE_FILTER_NEAREST) {
 			scaler = scale_nearest;
 		} else if (scale_filter == SCALE_FILTER_SHARP || scale_filter == SCALE_FILTER_SMOOTH) {
 			int gcd_w, div_w, gcd_h, div_h;
-			blend_args.blend_line = calloc(w, sizeof(uint16_t));
+			size_t blend_w = (size_t) ( (w > (int)dst_w) ? w : dst_w );
+			blend_args.blend_line = calloc(blend_w, sizeof(uint16_t));
+			if (!blend_args.blend_line) {
+				PA_ERROR("calloc failed for blend_line (%zu)\n", blend_w);
+				/* fallback to simple scaler to avoid crash */
+				scaler = scale_nearest;
+			} else {
+				gcd_w = gcd(w, dst_w);
+				blend_args.w_ratio_in = w / gcd_w;
+				blend_args.w_ratio_out = dst_w / gcd_w;
 
-			gcd_w = gcd(w, dst_w);
-			blend_args.w_ratio_in = w / gcd_w;
-			blend_args.w_ratio_out = dst_w / gcd_w;
+				div_w = (blend_args.w_ratio_out + 2) / 5;
+				blend_args.w_bp[0] = div_w;
+				blend_args.w_bp[1] = blend_args.w_ratio_out >> 1;
 
-			div_w = (blend_args.w_ratio_out + 2) / 5;
-			blend_args.w_bp[0] = div_w;
-			blend_args.w_bp[1] = blend_args.w_ratio_out >> 1;
+				gcd_h = gcd(h, dst_h);
+				blend_args.h_ratio_in = h / gcd_h;
+				blend_args.h_ratio_out = dst_h / gcd_h;
 
-			gcd_h = gcd(h, dst_h);
-			blend_args.h_ratio_in = h / gcd_h;
-			blend_args.h_ratio_out = dst_h / gcd_h;
+				div_h = (blend_args.h_ratio_out + 2) / 5;
+				blend_args.h_bp[0] = div_h;
+				blend_args.h_bp[1] = blend_args.h_ratio_out >> 1;
 
-			div_h = (blend_args.h_ratio_out + 2) / 5;
-			blend_args.h_bp[0] = div_h;
-			blend_args.h_bp[1] = blend_args.h_ratio_out >> 1;
-
-			scaler = scale_blend;
+				scaler = scale_blend;
+			}
 		} else {
 			scaler = scale_1x;
 		}
 
-		// --- Switch to cropped scaler if needed ---
+		/* Switch to cropped scaler if needed */
 		if (dst_w > visible_w) {
 			crop_scaler = scaler;
 			scaler = scale_crop;
 		}
 
-		PA_INFO("[CROPPED] src=%ux%u dst=%ux%u crop_x=%d offs=%d,%d\n",
+		/* Final safety checks before returning: ensure dst_offs within framebuffer and widths are sane */
+		if ((size_t)(dst_x + dst_w) > (size_t)SCREEN_WIDTH) {
+			PA_ERROR("Safety clamp: dst_x+dst_w (%d + %u) > SCREEN_WIDTH (%d). Clamping dst_x.\n",
+					 dst_x, dst_w, SCREEN_WIDTH);
+			if ((int)dst_w <= SCREEN_WIDTH)
+				dst_x = (SCREEN_WIDTH - (int)dst_w) / 2;
+			else
+				dst_x = 0;
+			dst_offs = dst_y * SCREEN_PITCH + dst_x * SCREEN_BPP;
+		}
+
+		PA_INFO("[CROPPED] final src=%ux%u dst=%ux%u crop_x=%d offs=%d,%d\n",
 				w, h, dst_w, dst_h, crop_x, dst_x, dst_y);
 	}
 
