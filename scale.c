@@ -489,6 +489,13 @@ static void scale_select_scaler(unsigned w, unsigned h, size_t pitch) {
 	}
 
 	if (scale_size == SCALE_SIZE_NATIVE) {
+		/* Perfect 1:1 passthrough: behave exactly like SCALED for trivial cases */
+		if (!strcmp(core_name, "mame2000") && video_width == 240 && video_height == 320) {
+			scale_size = SCALE_SIZE_SCALED; /* force reuse of the scaled path */
+			scale_select_scaler(w, h, pitch);
+			return;
+		}
+
 		int dst_x, dst_y;
 		src_offs = 0;
 
@@ -530,6 +537,13 @@ static void scale_select_scaler(unsigned w, unsigned h, size_t pitch) {
 		dst_h = SCREEN_HEIGHT;
 		dst_offs = 0;
 	} else if (scale_size == SCALE_SIZE_SCALED) {
+		/* Perfect 1:1 passthrough: behave exactly like NATIVE for GBA */
+		if (w == 240 && h == 160) {
+			scale_size = SCALE_SIZE_NATIVE; /* force reuse of the native path */
+			scale_select_scaler(w, h, pitch);
+			return;
+		}
+
 		dst_w = SCREEN_WIDTH;
 		dst_h = SCREEN_WIDTH / current_aspect_ratio + 0.5;
 		dst_offs = ((SCREEN_HEIGHT-dst_h)/2) * SCREEN_PITCH;
@@ -542,7 +556,12 @@ static void scale_select_scaler(unsigned w, unsigned h, size_t pitch) {
 	} else if (scale_size == SCALE_SIZE_CROPPED) {
 		/* Perfect 1:1 passthrough: behave exactly like NATIVE for trivial cases */
 		if (w == 320 || w == 384 || h == 240) {
-			scale_size = SCALE_SIZE_NATIVE;  /* force reuse of the native path */
+			scale_size = SCALE_SIZE_NATIVE; /* force reuse of the native path */
+			scale_select_scaler(w, h, pitch);
+			return;
+		/* Perfect 1:1 passthrough: behave exactly like SCALED for trivial cases */
+		} else if (!strcmp(core_name, "mame2000") && video_width == 240 && video_height == 320) {
+			scale_size = SCALE_SIZE_SCALED; /* force reuse of the scaled path */
 			scale_select_scaler(w, h, pitch);
 			return;
 		}
