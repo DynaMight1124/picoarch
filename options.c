@@ -14,7 +14,7 @@ int limit_frames;
 int enable_audio;
 int enable_drc;
 int use_srm;
-int rotate_display = 0; // 0 = normal, 1 = 90° CCW
+int rotate_display = 0; // 0 = normal, 1 = 90° CCW, 2 = 90° CW, 3 = 180°
 unsigned audio_buffer_size;
 enum scale_size scale_size;
 enum scale_filter scale_filter;

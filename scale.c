@@ -427,33 +427,37 @@ static void scale_sharp_256xXXX_320xXXX(unsigned w, unsigned h, size_t pitch, co
 	}
 }
 
-static void scale_rotate_90ccw(
-	unsigned w, unsigned h, size_t pitch,
-	const void *src_bytes, void *dst_bytes)
+/* rotate 90° CCW */
+static void rotate_90ccw(
+	unsigned w, unsigned h, const uint16_t *src, uint16_t *dst)
 {
-	const uint16_t *src = (const uint16_t *)src_bytes;
-	uint16_t *dst = (uint16_t *)dst_bytes;
-
-	const unsigned rotated_w = h;
-	const unsigned rotated_h = w;
-	const size_t src_pitch_pixels = pitch / sizeof(uint16_t);
-	const size_t dst_pitch_pixels = rotated_w;
-
-	// Clear destination buffer (ensures black borders / no artifacts)
-	memset(dst, 0, rotated_w * rotated_h * sizeof(uint16_t));
-
-	// Perform 90° CCW rotation
+	const size_t dst_pitch = h;
 	for (unsigned y = 0; y < h; y++) {
-		const uint16_t *src_row = src + (size_t)y * src_pitch_pixels;
-
-		// Trick: precompute w_minus_1 to avoid signed/unsigned mix
-		const unsigned w_minus_1 = w - 1;
-
-		// Use an index of type size_t to silence GCC’s “undefined behavior” paranoia
-		for (size_t x = 0; x < (size_t)w; x++) {
-			size_t dst_index = ((size_t)(w_minus_1 - x)) * dst_pitch_pixels + y;
-			dst[dst_index] = src_row[x];
+		for (unsigned x = 0; x < w; x++) {
+			dst[(w - 1 - x) * dst_pitch + y] = src[y * w + x];
 		}
+	}
+}
+
+/* rotate 90° CW */
+static void rotate_90cw(
+	unsigned w, unsigned h, const uint16_t *src, uint16_t *dst)
+{
+	const size_t dst_pitch = h;
+	for (unsigned y = 0; y < h; y++) {
+		for (unsigned x = 0; x < w; x++) {
+			dst[x * dst_pitch + (h - 1 - y)] = src[y * w + x];
+		}
+	}
+}
+
+/* rotate 180° */
+static void rotate_180(
+	unsigned w, unsigned h, const uint16_t *src, uint16_t *dst)
+{
+	const size_t total = w * h;
+	for (size_t i = 0; i < total; i++) {
+		dst[total - 1 - i] = src[i];
 	}
 }
 
@@ -840,23 +844,43 @@ void scale(unsigned w, unsigned h, size_t pitch, const void *src, void *dst)
 		return;
 	}
 
-	// ---- Rotated rendering (TATE mode) ----
-	// Compute how much memory is needed for the temporary buffer
-	size_t needed = SCREEN_WIDTH * SCREEN_HEIGHT * sizeof(uint16_t);
+	// ----- Rotated rendering -----
+	if (rotate_display != 0) {
+		/* allocate tmpbuf with the actual framebuffer stride (bytes per line) to match scalers */
+		size_t needed = (size_t)SCREEN_PITCH * (size_t)SCREEN_HEIGHT; /* bytes */
+		if (tmp_size < needed) {
+			free(tmpbuf);
+			tmpbuf = malloc(needed);
+			if (!tmpbuf) {
+				PA_ERROR("malloc failed for tmpbuf (%zu bytes)\n", needed);
+				/* fallback: render directly to dst (may crash otherwise) */
+				scaler(w, h, pitch, src, dst);
+				return;
+			}
+			tmp_size = needed;
+		}
 
-	// Allocate or reallocate the temporary buffer if size changed
-	if (tmp_size < needed) {
-		free(tmpbuf);
-		tmpbuf = malloc(needed);
-		tmp_size = needed;
+		/* Clear tmpbuf so regions not written by scaler remain black (prevents residues) */
+		memset(tmpbuf, 0, needed);
+
+		/* Step 1 : render normally into tmpbuf (scalers expect dst stride == SCREEN_PITCH) */
+		scaler(w, h, pitch, src, tmpbuf);
+
+		/* Step 2 : apply selected rotation. tmpbuf uses SCREEN_PITCH stride so rotation functions must read with that stride. */
+		switch (rotate_display) {
+
+			case 1: // 90° CCW
+				rotate_90ccw(SCREEN_WIDTH, SCREEN_HEIGHT, (const uint16_t *)tmpbuf, (uint16_t *)dst);
+				break;
+
+			case 2: // 90° CW
+				rotate_90cw(SCREEN_WIDTH, SCREEN_HEIGHT, (const uint16_t *)tmpbuf, (uint16_t *)dst);
+				break;
+
+			case 3: // 180°
+				rotate_180(SCREEN_WIDTH, SCREEN_HEIGHT, (const uint16_t *)tmpbuf, (uint16_t *)dst);
+				break;
+		}
+		return;
 	}
-
-	// Clear temporary buffer before rendering (prevents pixel artifacts)
-	memset(tmpbuf, 0, needed);
-
-	// Step 1: Render normally into the temporary buffer
-	scaler(w, h, pitch, src, tmpbuf);
-
-	// Step 2: Rotate the rendered frame into the destination buffer
-	scale_rotate_90ccw(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_WIDTH * SCREEN_BPP, tmpbuf, dst);
 }

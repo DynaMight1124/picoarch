@@ -544,6 +544,19 @@ static const char h_use_srm[]        =
 	"compatibility with mainline retroarch saves.\n"
 	"Save file compression needs to be off in retroarch.";
 
+static const char h_rotate_display[] =
+	"Rotate screen orientation by 90 degrees counter-\n"
+	"clockwise, 90 degrees clockwise or 180 degrees.\n";
+
+static const char *men_rotate_display[] =
+{
+	"Normal",
+	"90 degrees CCW",
+	"90 degrees CW",
+	"180 degrees",
+	NULL
+};
+
 static const char *men_scale_size[] = { "Native", "Scaled", "Stretched", NULL };
 #else
 static const char h_enable_drc[]      =
@@ -552,7 +565,7 @@ static const char h_enable_drc[]      =
 
 static const char h_audio_buffer_size[]        =
 	"The audio buffer size, in frames.\n"
-  "Higher values reduce the risk of audio\n"
+	"Higher values reduce the risk of audio\n"
 	"crackling at the cost of delayed sound.";
 
 static const char h_scale_size[]        =
@@ -573,20 +586,31 @@ static const char h_use_srm[]        =
 	"retroarch saves. Save file compression\n"
 	"needs to be off in retroarch.";
 
+static const char h_rotate_display[] =
+	"Rotate screen orientation by 90 degrees\n"
+	"counter-clockwise, 90 degrees clockwise\n"
+	"or 180 degrees.";
+
+static const char *men_rotate_display[] =
+{
+	"Normal",
+	"90CCW",
+	"90CW",
+	"180",
+	NULL
+};
+
 static const char *men_scale_size[] = { "Native", "Scaled", "Stretched", "Cropped", NULL };
 #endif
 
 static const char *men_scale_filter[] = { "Nearest", "Sharp", "Smooth", NULL};
-
-static const char h_rotate_display[] =
-	"Rotate screen 90 degrees CCW (TATE).";
 
 static menu_entry e_menu_video_options[] =
 {
 	mee_onoff_h      ("Show FPS",                 0, show_fps, 1, h_show_fps),
 	mee_onoff_h      ("Show CPU %%",              0, show_cpu, 1, h_show_cpu),
 	mee_enum_h       ("Screen size",              0, scale_size, men_scale_size, h_scale_size),
-	mee_onoff_h      ("Rotate screen",            0, rotate_display, 1, h_rotate_display),
+	mee_enum_h       ("Rotate screen",            0, rotate_display, men_rotate_display, h_rotate_display),
 	mee_enum_h       ("Filter",                   0, scale_filter, men_scale_filter, h_scale_filter),
 	mee_range_h      ("Audio buffer",             0, audio_buffer_size, 1, 15, h_audio_buffer_size),
 	mee_onoff_h      ("Audio adjustment",         0, enable_drc, 1, h_enable_drc),
