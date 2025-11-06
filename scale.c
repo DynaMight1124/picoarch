@@ -427,18 +427,6 @@ static void scale_sharp_256xXXX_320xXXX(unsigned w, unsigned h, size_t pitch, co
 	}
 }
 
-/* rotate 90° CCW */
-static void rotate_90ccw(
-	unsigned w, unsigned h, const uint16_t *src, uint16_t *dst)
-{
-	const size_t dst_pitch = h;
-	for (unsigned y = 0; y < h; y++) {
-		for (unsigned x = 0; x < w; x++) {
-			dst[(w - 1 - x) * dst_pitch + y] = src[y * w + x];
-		}
-	}
-}
-
 /* rotate 90° CW */
 static void rotate_90cw(
 	unsigned w, unsigned h, const uint16_t *src, uint16_t *dst)
@@ -458,6 +446,18 @@ static void rotate_180(
 	const size_t total = w * h;
 	for (size_t i = 0; i < total; i++) {
 		dst[total - 1 - i] = src[i];
+	}
+}
+
+/* rotate 270° CW */
+static void rotate_270cw(
+	unsigned w, unsigned h, const uint16_t *src, uint16_t *dst)
+{
+	const size_t dst_pitch = h;
+	for (unsigned y = 0; y < h; y++) {
+		for (unsigned x = 0; x < w; x++) {
+			dst[(w - 1 - x) * dst_pitch + y] = src[y * w + x];
+		}
 	}
 }
 
@@ -869,16 +869,16 @@ void scale(unsigned w, unsigned h, size_t pitch, const void *src, void *dst)
 		/* Step 2 : apply selected rotation. tmpbuf uses SCREEN_PITCH stride so rotation functions must read with that stride. */
 		switch (rotate_display) {
 
-			case 1: // 90° CCW
-				rotate_90ccw(SCREEN_WIDTH, SCREEN_HEIGHT, (const uint16_t *)tmpbuf, (uint16_t *)dst);
-				break;
-
-			case 2: // 90° CW
+			case 1: // 90° CW
 				rotate_90cw(SCREEN_WIDTH, SCREEN_HEIGHT, (const uint16_t *)tmpbuf, (uint16_t *)dst);
 				break;
 
-			case 3: // 180°
+			case 2: // 180°
 				rotate_180(SCREEN_WIDTH, SCREEN_HEIGHT, (const uint16_t *)tmpbuf, (uint16_t *)dst);
+				break;
+
+			case 3: // 270° CW
+				rotate_270cw(SCREEN_WIDTH, SCREEN_HEIGHT, (const uint16_t *)tmpbuf, (uint16_t *)dst);
 				break;
 		}
 		return;

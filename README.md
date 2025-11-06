@@ -115,7 +115,7 @@ make clean-gpsp
 To completely clean the repo (will delete, pull, and patch all core repos from scratch)
 
 ```
-make force-clean
+make distclean
 ```
 
 To build profiles for profile-guided optimization:

@@ -6,8 +6,16 @@ static const struct core_override_option picodrive_core_option_overrides[] = {
 		.info = "Specify which region the system is from. 'PAL'/'Europe' is 50hz while 'NTSC'/'US' is 60hz."
 	},
 	{
+		.key = "picodrive_smstype",
+		.desc = "SMS Type",
+	},
+	{
 		.key = "picodrive_smsmapper",
 		.desc = "SMS ROM Mapping",
+	},
+	{
+		.key = "picodrive_smstms",
+		.desc = "SMS Palette for TMS",
 	},
 	{
 		.key = "picodrive_renderer",
@@ -23,12 +31,9 @@ static const struct core_override_option picodrive_core_option_overrides[] = {
 		.desc = "SMS FM Sound",
 	},
 	{
-		.key = "picodrive_dacnoise",
-		.desc = "FM DAC Noise",
-	},
-	{
-		.key = "picodrive_overscan",
-		.info = "Crop out the potentially random glitchy video output that would have been hidden by the TV bezel."
+		.key = "picodrive_fmchip",
+		.desc = "Mega Drive FM chip",
+		.info = "Select the Mega Drive/Genesis FM chip. Model 1 consoles mostly used YM2612, which produced a distinct distortion. YM3438 was used in model 2 consoles."
 	},
 	{
 		.key = "picodrive_audio_filter",

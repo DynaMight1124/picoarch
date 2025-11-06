@@ -514,15 +514,15 @@ static int menu_loop_core_options(int id, int keys)
 	return menu_loop_core_options_page(0, keys);
 }
 
-static const char h_rm_config_game[]  = "Removes game-specific config file";
+static const char h_rm_config_game[]  = "Removes game-specific config file.";
 
-static const char h_restore_def[]     = "Switches back to default settings";
+static const char h_restore_def[]     = "Switches back to default settings.";
 
 static const char h_show_fps[]        = "Shows frames and vsyncs per second";
-static const char h_show_cpu[]        = "Shows CPU usage";
+static const char h_show_cpu[]        = "Shows CPU usage (%).";
 
 #if (SCREEN_WIDTH >= 320)
-static const char h_enable_drc[]      = "Dynamically adjusts audio rate for smoother video";
+static const char h_enable_drc[]      = "Dynamically adjusts audio rate for smoother video.";
 
 static const char h_audio_buffer_size[]        =
 	"The size of the audio buffer, in frames. Higher\n"
@@ -538,22 +538,22 @@ static const char h_scale_filter[]        =
 	"When stretching, how missing pixels are filled.\n"
 	"Nearest copies the last pixel. Sharp keeps pixels\n"
 	"aligned where possible. Smooth adds a blur effect.";
-	
+
 static const char h_use_srm[]        =
 	"Use .srm files for SRAM saves, needed for\n"
 	"compatibility with mainline retroarch saves.\n"
 	"Save file compression needs to be off in retroarch.";
 
 static const char h_rotate_display[] =
-	"Rotate screen orientation by 90 degrees counter-\n"
-	"clockwise, 90 degrees clockwise or 180 degrees.\n";
+	"Screen orientation. Rotates by 90, 180 or 270\n"
+	"degrees clockwise.";
 
 static const char *men_rotate_display[] =
 {
-	"Normal",
-	"90 degrees CCW",
-	"90 degrees CW",
+	"OFF",
+	"90 degrees",
 	"180 degrees",
+	"270 degrees",
 	NULL
 };
 
@@ -579,7 +579,7 @@ static const char h_scale_filter[]        =
 	"are filled. Nearest copies the last\n"
 	"pixel. Sharp tries to keep pixels\n"
 	"aligned. Smooth adds a blur effect.";
-	
+
 static const char h_use_srm[]        =
 	"Use .srm files for SRAM saves,\n"
 	"needed for compatibility with mainline\n"
@@ -587,16 +587,15 @@ static const char h_use_srm[]        =
 	"needs to be off in retroarch.";
 
 static const char h_rotate_display[] =
-	"Rotate screen orientation by 90 degrees\n"
-	"counter-clockwise, 90 degrees clockwise\n"
-	"or 180 degrees.";
+	"Screen orientation. Rotates by 90, 180\n"
+	"or 270 degrees clockwise.";
 
 static const char *men_rotate_display[] =
 {
-	"Normal",
-	"90CCW",
-	"90CW",
-	"180",
+	"OFF",
+	"90 deg.",
+	"180 deg.",
+	"270 deg.",
 	NULL
 };
 
@@ -608,9 +607,9 @@ static const char *men_scale_filter[] = { "Nearest", "Sharp", "Smooth", NULL};
 static menu_entry e_menu_video_options[] =
 {
 	mee_onoff_h      ("Show FPS",                 0, show_fps, 1, h_show_fps),
-	mee_onoff_h      ("Show CPU %%",              0, show_cpu, 1, h_show_cpu),
+	mee_onoff_h      ("Show CPU usage",           0, show_cpu, 1, h_show_cpu),
 	mee_enum_h       ("Screen size",              0, scale_size, men_scale_size, h_scale_size),
-	mee_enum_h       ("Rotate screen",            0, rotate_display, men_rotate_display, h_rotate_display),
+	mee_enum_h       ("Screen rotation",          0, rotate_display, men_rotate_display, h_rotate_display),
 	mee_enum_h       ("Filter",                   0, scale_filter, men_scale_filter, h_scale_filter),
 	mee_range_h      ("Audio buffer",             0, audio_buffer_size, 1, 15, h_audio_buffer_size),
 	mee_onoff_h      ("Audio adjustment",         0, enable_drc, 1, h_enable_drc),

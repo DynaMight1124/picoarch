@@ -212,28 +212,18 @@ void set_defaults(void)
 	enable_drc = 1;
 	use_srm = 0;
 	audio_buffer_size = 5;
-	scale_size = SCALE_SIZE_STRETCHED;
+	scale_size = SCALE_SIZE_SCALED;
 	scale_filter = SCALE_FILTER_SMOOTH;
 
 	/* Sets better defaults for small screen */
 	if (SCREEN_WIDTH == 240) {
 		scale_size = SCALE_SIZE_NATIVE;
 		scale_filter = SCALE_FILTER_SMOOTH;
-
-		if (!strcmp(core_name, "gambatte") ||
-		    !strcmp(core_name, "mame2000")) {
+		if (!strcmp(core_name, "gambatte")		||
+			!strcmp(core_name, "mednafen_lynx")	||
+			!strcmp(core_name, "mednafen_ngp")	||
+			!strcmp(core_name, "pokemini")) {
 			scale_size = SCALE_SIZE_SCALED;
-			scale_filter = SCALE_FILTER_SMOOTH;
-		}
-
-		if (!strcmp(core_name, "fake-08")) {
-			scale_size = SCALE_SIZE_SCALED;
-			scale_filter = SCALE_FILTER_NEAREST;
-		}
-
-		if (!strcmp(core_name, "pcsx_rearmed") ||
-		    !strcmp(core_name, "picodrive")) {
-			scale_size = SCALE_SIZE_STRETCHED;
 			scale_filter = SCALE_FILTER_SMOOTH;
 		}
 	}

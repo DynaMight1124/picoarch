@@ -10,7 +10,7 @@ extern int limit_frames;
 extern int enable_audio;
 extern int enable_drc;
 extern int use_srm;
-extern int rotate_display; // 0 = normal, 1 = 90° CCW, 2 = 90° CW, 3 = 180°
+extern int rotate_display; // 0 = normal, 1 = 90° CW, 2 = 180°, 3 = 270° CW
 extern unsigned audio_buffer_size;
 extern enum scale_size scale_size;
 extern enum scale_filter scale_filter;

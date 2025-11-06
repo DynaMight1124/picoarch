@@ -1,0 +1,17 @@
+diff --git a/src/driver.h b/src/driver.h
+index eb3866d..47efd87 100644
+--- a/src/driver.h
++++ b/src/driver.h
+@@ -480,9 +480,9 @@ struct GameDriver driver_##NAME =			\
+ 
+ /* monitor parameters to be used with the GAME() macro */
+ #define	ROT0	0x0000
+-#define	ROT90	(ORIENTATION_SWAP_XY|ORIENTATION_FLIP_X)	/* rotate clockwise 90 degrees */
+-#define	ROT180	(ORIENTATION_FLIP_X|ORIENTATION_FLIP_Y)		/* rotate 180 degrees */
+-#define	ROT270	(ORIENTATION_SWAP_XY|ORIENTATION_FLIP_Y)	/* rotate counter-clockwise 90 degrees */
++#define	ROT90	(ROT0)	/* rotate clockwise 90 degrees */
++#define	ROT180	(ROT0)	/* rotate 180 degrees */
++#define	ROT270	(ROT0)	/* rotate counter-clockwise 90 degrees */
+ #define	ROT0_16BIT		(ROT0|GAME_REQUIRES_16BIT)
+ #define	ROT90_16BIT		(ROT90|GAME_REQUIRES_16BIT)
+ #define	ROT180_16BIT	(ROT180|GAME_REQUIRES_16BIT)

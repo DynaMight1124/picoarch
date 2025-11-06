@@ -21,17 +21,13 @@ LDFLAGS    = -lc -ldl -lgcc -lm -lSDL -lasound -lpng -lz -Wl,--gc-sections -flto
 # Unpolished or slow cores that build
 # EXTRA_CORES += mame2003_plus prboom scummvm tyrquake
 
-CORES = beetle-pce-fast bluemsx fceumm fmsx gambatte gme gpsp mame2000 mednafen_ngp mednafen_wswan pcsx_rearmed picodrive pokemini quicknes smsplus-gx snes9x2002 snes9x2005 stella2014 $(EXTRA_CORES)
+CORES = bluemsx fceumm fmsx gambatte gme gpsp mame2000 mednafen_lynx mednafen_ngp mednafen_pce_fast mednafen_wswan pcsx_rearmed picodrive pokemini quicknes smsplus-gx snes9x2002 snes9x2005 stella2014 $(EXTRA_CORES)
 
 ifneq ($(platform), trimui)
 CORES := $(CORES) dosbox-pure fake-08 fbalpha2012 snes9x2005_plus snes9x2010
 endif
 
 # CORES = dosbox-pure
-
-beetle-pce-fast_REPO = https://github.com/libretro/beetle-pce-fast-libretro
-beetle-pce-fast_CORE = mednafen_pce_fast_libretro.so
-beetle-pce-fast_TYPES = pce,cue,ccd,chd,toc,m3u
 
 bluemsx_REPO = https://github.com/libretro/blueMSX-libretro
 bluemsx_TYPES = rom,ri,mx1,mx2,dsk,col,sg,sc,cas,m3u
@@ -43,7 +39,6 @@ dosbox-pure_FLAGS = STRIPCMD="$(CROSS_COMPILE)strip"
 ifeq ($(platform), funkey-s)
 dosbox-pure_FLAGS += CYCLE_LIMIT=8200
 endif
-
 
 fake-08_REPO = https://github.com/jtothebell/fake-08
 fake-08_BUILD_PATH = fake-08/platform/libretro
@@ -75,8 +70,14 @@ mame2000_TYPES = zip
 mame2003_plus_REPO = https://github.com/libretro/mame2003-plus-libretro
 mame2003_plus_TYPES = zip
 
+mednafen_lynx_REPO = https://github.com/libretro/beetle-lynx-libretro
+mednafen_lynx_TYPES = lnx,lyx,bll,o
+
 mednafen_ngp_REPO = https://github.com/libretro/beetle-ngp-libretro
 mednafen_ngp_TYPES = ngp,ngc,ngpc,npc
+
+mednafen_pce_fast_REPO = https://github.com/libretro/beetle-pce-fast-libretro
+mednafen_pce_fast_TYPES = pce,cue,ccd,chd,toc,m3u
 
 mednafen_wswan_REPO = https://github.com/libretro/beetle-wswan-libretro
 mednafen_wswan_TYPES = ws,wsc,pc2
@@ -103,12 +104,10 @@ smsplus-gx_TYPES = sms,bin,rom,col,gg,sg
 
 snes9x2002_TYPES = smc,fig,sfc,gd3,gd7,dx2,bsx,swc,zip
 
-snes9x2005_REPO = https://git.crowdedwood.com/snes9x2005
-snes9x2005_REVISION = performance
+snes9x2005_REPO = https://github.com/libretro/snes9x2005
 snes9x2005_TYPES = smc,fig,sfc,gd3,gd7,dx2,bsx,swc,zip
 
-snes9x2005_plus_REPO = https://git.crowdedwood.com/snes9x2005
-snes9x2005_plus_REVISION = performance
+snes9x2005_plus_REPO = https://github.com/libretro/snes9x2005
 snes9x2005_plus_FLAGS = USE_BLARGG_APU=1
 snes9x2005_plus_TYPES = smc,fig,sfc,gd3,gd7,dx2,bsx,swc,zip
 
@@ -245,10 +244,6 @@ distclean: clean
 
 ifeq ($(platform), trimui)
 
-beetle-pce-fast_NAME = pce_fast
-beetle-pce-fast_ROM_DIR = PCE
-beetle-pce-fast_PAK_NAME = TurboGrafx-16
-
 bluemsx_NAME = blueMSX
 bluemsx_ROM_DIR = MSX
 bluemsx_PAK_NAME = MSX (blueMSX)
@@ -288,6 +283,10 @@ mame2003_plus_PAK_NAME = Arcade (MAME 2003-plus)
 mednafen_ngp_NAME = ngp
 mednafen_ngp_ROM_DIR = NGP
 mednafen_ngp_PAK_NAME = Neo Geo Pocket
+
+mednafen_pce_fast_NAME = pce_fast
+mednafen_pce_fast_ROM_DIR = PCE
+mednafen_pce_fast_PAK_NAME = TurboGrafx-16
 
 mednafen_wswan_NAME = wswan
 mednafen_wswan_ROM_DIR = WS
@@ -429,11 +428,6 @@ endif # platform=trimui
 
 ifeq ($(platform), funkey-s)
 
-beetle-pce-fast_NAME = pce_fast
-beetle-pce-fast_ROM_DIR = /mnt/PCE-TurboGrafx
-beetle-pce-fast_ICON_URL = https://raw.githubusercontent.com/FunKey-Project/FunKey-OS/master/FunKey/package/mednafen/opk/pce/pce.png
-beetle-pce-fast_ICON = pce
-
 bluemsx_NAME = blueMSX
 bluemsx_ROM_DIR = /mnt/MSX
 bluemsx_ICON_URL = https://raw.githubusercontent.com/MiyooCFW/gmenu2x/gmenunx/assets/miyoo/skins/PixUI/icons/dingux-msx.png
@@ -488,6 +482,11 @@ mednafen_ngp_NAME = ngp
 mednafen_ngp_ROM_DIR = /mnt/Neo Geo Pocket
 mednafen_ngp_ICON_URL = https://raw.githubusercontent.com/FunKey-Project/FunKey-OS/master/FunKey/package/mednafen/opk/ngp/ngp.png
 mednafen_ngp_ICON = ngp
+
+mednafen_pce_fast_NAME = pce_fast
+mednafen_pce_fast_ROM_DIR = /mnt/PCE-TurboGrafx
+mednafen_pce_fast_ICON_URL = https://raw.githubusercontent.com/FunKey-Project/FunKey-OS/master/FunKey/package/mednafen/opk/pce/pce.png
+mednafen_pce_fast_ICON = pce
 
 mednafen_wswan_NAME = wswan
 mednafen_wswan_ROM_DIR = /mnt/WonderSwan

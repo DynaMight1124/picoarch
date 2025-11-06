@@ -14,8 +14,17 @@ static const struct core_override_option pcsx_rearmed_core_option_overrides[] = 
 		.info = "When using an official BIOS, whether to show the PlayStation logo at startup. Showing the boot logo may reduce compatibility.",
 	},
 	{
+		.key = "pcsx_rearmed_cd_readahead",
+		.info = "Reads the specified amount of sectors ahead of time to avoid later stalls (both physical CD-ROM and CD images). 333000 will read the complete disk."
+	},
+	{
 		.key = "pcsx_rearmed_drc",
 		.info = "Dynamically recompile PSX CPU instructions to native instructions. Much faster, but may be less accurate.",
+	},
+	{
+		.key = "pcsx_rearmed_psxclock",
+		.desc = "CPU Speed (%%)",
+		.info = "Overclock/underclock the CPU. Should be less than 100 (like 57) due to some hw slowdowns not emulated. Should be 'Auto', else glitches/hangs are likely."
 	},
 	{
 		.key = "pcsx_rearmed_frameskip_type",
@@ -36,6 +45,64 @@ static const struct core_override_option pcsx_rearmed_core_option_overrides[] = 
 		.desc = "FS Interval",
 		.info = "Specifies the maximum number of frames that can be skipped before a new frame is rendered.",
 		.default_value = "4"
+	},
+	{
+		.key = "pcsx_rearmed_fractional_framerate",
+		.desc = "Use fractional FPS",
+		.info = "Real hw runs around 49.75 and 59.81fps (PAL/NTSC). PCSX uses the former \"round\" framerates for modern displays, but may cause audio/video desync."
+	},
+	{
+		.key = "pcsx_rearmed_rgb32_output",
+		.info = "Improves color depth for true color modes. Causes higher CPU usage due to double memory bandwidth requirement. Game reload required."
+	},
+	{
+		.key = "pcsx_rearmed_show_overscan",
+		.desc = "Horiz. overscan",
+		.info = "PSX can display graphics into the horizontal borders (some screens crop it). This option displays this area. May result in unsupported resolutions."
+	},
+	{
+		.key = "pcsx_rearmed_screen_centering",
+		.desc = "Screen centering",
+		.info = "'Auto' corrects miscentering automatically. 'Game-controlled' uses the game settings. 'Manual' overrides those values with the settings below.",
+	},
+	{
+		.key = "pcsx_rearmed_screen_centering_x",
+		.desc = "Manual position X",
+	},
+	{
+		.key = "pcsx_rearmed_screen_centering_y",
+		.desc = "Manual position Y",
+	},
+	{
+		.key = "pcsx_rearmed_screen_centering_h_adj",
+		.desc = "Manual height",
+	},
+	{
+		.key = "pcsx_rearmed_neon_enhancement_tex_adj_v2",
+		.desc = "Enhanced Textures",
+	},
+	{
+		.key = "pcsx_rearmed_analog_combo",
+		.desc = "DS Analog Toggle",
+		.info = "Allows the emulated DualShock to be toggled between DIGITAL and ANALOG mode like original hardware. You can select the button combination for this.",
+		.options = {
+			{"disabled", NULL},
+			{"l1+r1+select", "L1+R1+Select"},
+			{"l1+r1+start",  "L1+R1+Start"},
+			{"l1+r1+l3",     "L1+R1+L3"},
+			{"l1+r1+r3",     "L1+R1+R3"},
+			{"l3+r3",        "L3+R3"},
+			{ NULL, NULL }
+		}
+	},
+	{
+		.key = "pcsx_rearmed_exception_emulation",
+		.desc = "Debug mode",
+		.info = "Emulation of debug features. Causes a performance hit, not useful for games and intended for homebrew and romhack developers only. [Interpreter only]"
+	},
+	{
+		.key = "pcsx_rearmed_cd_turbo",
+		.info = "Makes emulated CD-ROM very fast and reduces loading times. Warning: many games do not handle such a speed. The game or even the emulator MAY CRASH."
 	},
 	{
 		.key = "pcsx_rearmed_memcard2",
@@ -126,7 +193,7 @@ static const struct core_override_option pcsx_rearmed_core_option_overrides[] = 
 		.desc = "Slow Linked Lists",
 	},
 	{
-		.key = "pcsx_rearmed_neon_interlace_enable",
+		.key = "pcsx_rearmed_neon_interlace_enable_v2",
 		.desc = "Interlaced Video",
 		.info = "When enabled, games that run in high resolution video modes (480i, 512i) produce interlaced video output.",
 	},
@@ -206,7 +273,7 @@ static const struct core_override_option pcsx_rearmed_core_option_overrides[] = 
 		.blocked = true
 	},
 	{
-		.key = "pcsx_rearmed_display_internal_fps",
+		.key = "pcsx_rearmed_display_fps_v2",
 		.blocked = true
 	},
 	{

@@ -3,16 +3,20 @@
 static const struct core_override_option mednafen_wswan_core_option_overrides[] = {
 	{
 		.key = "wswan_rotate_display",
-		.info = "Choose the orientation of the console screen. 'Manual' enables rotation via the controller.",
+		.blocked = true
 	},
 	{
 		.key = "wswan_rotate_keymap",
-		.desc = "Rotate Buttons",
+		.blocked = true
 	},
 	{
 		.key = "wswan_gfx_colors",
 		.desc = "Color Depth",
 		.info = "24-bit is slower and not available on all platforms. Restart required.",
+		.options = {
+			{ "16bit", "16-bit" },
+			{ "24bit", "24-bit" },
+		}
 	},
 	{
 		.key = "wswan_frameskip",
@@ -25,7 +29,8 @@ static const struct core_override_option mednafen_wswan_core_option_overrides[] 
 	},
 	{
 		.key = "wswan_60hz_mode",
-		.info = "Update the display at 60Hz instead of the native 75Hz WonderSwan refresh rate by dropping every fifth frame. Reduces video smoothness, but avoids screen tearing on 60Hz screens.",
+		.info = "Use 60Hz instead of the native 75Hz refresh rate by dropping every fifth frame. Reduces video smoothness, but avoids screen tearing on 60Hz screens.",
+		.default_value = "enabled"
 	},
 	{
 		.key = "wswan_sound_sample_rate",
