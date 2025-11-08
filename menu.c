@@ -156,7 +156,46 @@ static int core_selector(const struct dirent *ent) {
 }
 
 static int menu_loop_core_page(int offset, int keys) {
-	static int sel = 0;
+	/* persistent per-page selection for core list */
+	static int *core_sel_per_page = NULL;
+	static int core_sel_pages_alloc = 0;
+
+	/* total entries known from corelist_len */
+	int total_entries = corelist_len > 0 ? corelist_len : 0;
+	int needed_pages = (total_entries + MENU_ITEMS_PER_PAGE - 1) / MENU_ITEMS_PER_PAGE;
+	if (needed_pages < 1) needed_pages = 1;
+
+	if (core_sel_pages_alloc < needed_pages) {
+		int old = core_sel_pages_alloc;
+		int *tmp = realloc(core_sel_per_page, sizeof(int) * needed_pages);
+		if (tmp) {
+			core_sel_per_page = tmp;
+			/* initialize new slots to -1 (unvisited) */
+			for (int k = old; k < needed_pages; k++)
+				core_sel_per_page[k] = -1;
+			core_sel_pages_alloc = needed_pages;
+		} else {
+			/* fallback: ensure at least one page */
+			if (!core_sel_per_page) {
+				core_sel_per_page = malloc(sizeof(int));
+				if (core_sel_per_page) {
+					core_sel_per_page[0] = -1;
+					core_sel_pages_alloc = 1;
+				}
+			}
+		}
+	}
+
+	int page = offset / MENU_ITEMS_PER_PAGE;
+	if (page < 0) page = 0;
+	if (page >= core_sel_pages_alloc) page = core_sel_pages_alloc - 1;
+
+	int sel;
+	if (core_sel_per_page && core_sel_per_page[page] != -1)
+		sel = core_sel_per_page[page];
+	else
+		sel = 0;
+
 	menu_entry e_menu_cores[MENU_ITEMS_PER_PAGE + 2] = {0}; /* +2 for Next, NULL */
 	size_t menu_idx = 0;
 	int i;
@@ -187,8 +226,11 @@ static int menu_loop_core_page(int offset, int keys) {
 		option->selectable = 1;
 		option->handler = menu_loop_core_page;
 	}
-
-	return me_loop(e_menu_cores, &sel);
+	int ret = me_loop(e_menu_cores, &sel);
+	/* save last sel for this page */
+	if (core_sel_per_page && page >= 0 && page < core_sel_pages_alloc)
+		core_sel_per_page[page] = sel;
+	return ret;
 }
 
 int menu_select_core(void) {
@@ -396,7 +438,43 @@ static int menu_loop_disc(int id, int keys)
 }
 
 static int menu_loop_cheats_page(int offset, int keys) {
-	static int sel = 0;
+	/* persistent per-page selection for cheats */
+	static int *cheats_sel_per_page = NULL;
+	static int cheats_sel_pages_alloc = 0;
+
+	int total_entries = cheats ? cheats->count : 0;
+	int needed_pages = (total_entries + MENU_ITEMS_PER_PAGE - 1) / MENU_ITEMS_PER_PAGE;
+	if (needed_pages < 1) needed_pages = 1;
+
+	if (cheats_sel_pages_alloc < needed_pages) {
+		int old = cheats_sel_pages_alloc;
+		int *tmp = realloc(cheats_sel_per_page, sizeof(int) * needed_pages);
+		if (tmp) {
+			cheats_sel_per_page = tmp;
+			for (int k = old; k < needed_pages; k++)
+				cheats_sel_per_page[k] = -1;
+			cheats_sel_pages_alloc = needed_pages;
+		} else {
+			if (!cheats_sel_per_page) {
+				cheats_sel_per_page = malloc(sizeof(int));
+				if (cheats_sel_per_page) {
+					cheats_sel_per_page[0] = -1;
+					cheats_sel_pages_alloc = 1;
+				}
+			}
+		}
+	}
+
+	int page = offset / MENU_ITEMS_PER_PAGE;
+	if (page < 0) page = 0;
+	if (page >= cheats_sel_pages_alloc) page = cheats_sel_pages_alloc - 1;
+
+	int sel;
+	if (cheats_sel_per_page && cheats_sel_per_page[page] != -1)
+		sel = cheats_sel_per_page[page];
+	else
+		sel = 0;
+
 	menu_entry *e_menu_cheats;
 	size_t i, menu_idx;
 
@@ -435,11 +513,11 @@ static int menu_loop_cheats_page(int offset, int keys) {
 		option->selectable = 1;
 		option->handler = menu_loop_cheats_page;
 	}
-
-	me_loop(e_menu_cheats, &sel);
+	int ret = me_loop(e_menu_cheats, &sel);
 	free(e_menu_cheats);
-
-	return 0;
+	if (cheats_sel_per_page && page >= 0 && page < cheats_sel_pages_alloc)
+		cheats_sel_per_page[page] = sel;
+	return ret;
 }
 
 static int menu_loop_cheats(int id, int keys)
@@ -450,7 +528,44 @@ static int menu_loop_cheats(int id, int keys)
 }
 
 static int menu_loop_core_options_page(int offset, int keys) {
-	static int sel = 0;
+	/* persistent per-page selection for core options */
+	static int *coreopt_sel_per_page = NULL;
+	static int coreopt_sel_pages_alloc = 0;
+
+	int total_entries = core_options.visible_len;
+	if (total_entries < 0) total_entries = 0;
+	int needed_pages = (total_entries + MENU_ITEMS_PER_PAGE - 1) / MENU_ITEMS_PER_PAGE;
+	if (needed_pages < 1) needed_pages = 1;
+
+	if (coreopt_sel_pages_alloc < needed_pages) {
+		int old = coreopt_sel_pages_alloc;
+		int *tmp = realloc(coreopt_sel_per_page, sizeof(int) * needed_pages);
+		if (tmp) {
+			coreopt_sel_per_page = tmp;
+			for (int k = old; k < needed_pages; k++)
+				coreopt_sel_per_page[k] = -1;
+			coreopt_sel_pages_alloc = needed_pages;
+		} else {
+			if (!coreopt_sel_per_page) {
+				coreopt_sel_per_page = malloc(sizeof(int));
+				if (coreopt_sel_per_page) {
+					coreopt_sel_per_page[0] = -1;
+					coreopt_sel_pages_alloc = 1;
+				}
+			}
+		}
+	}
+
+	int page = offset / MENU_ITEMS_PER_PAGE;
+	if (page < 0) page = 0;
+	if (page >= coreopt_sel_pages_alloc) page = coreopt_sel_pages_alloc - 1;
+
+	int sel;
+	if (coreopt_sel_per_page && coreopt_sel_per_page[page] != -1)
+		sel = coreopt_sel_per_page[page];
+	else
+		sel = 0;
+
 	menu_entry *e_menu_core_options;
 	size_t i, menu_idx;
 
@@ -499,14 +614,16 @@ static int menu_loop_core_options_page(int offset, int keys) {
 		option->selectable = 1;
 		option->handler = menu_loop_core_options_page;
 	}
-
-	me_loop(e_menu_core_options, &sel);
+	int ret = me_loop(e_menu_core_options, &sel);
 
 	options_update_changed();
 
 	free(e_menu_core_options);
 
-	return 0;
+	if (coreopt_sel_per_page && page >= 0 && page < coreopt_sel_pages_alloc)
+		coreopt_sel_per_page[page] = sel;
+
+	return ret;
 }
 
 static int menu_loop_core_options(int id, int keys)
