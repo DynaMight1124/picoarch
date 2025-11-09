@@ -15,7 +15,7 @@ on:
 jobs:
   # A single job called "build"
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       # Step 1: Install base dependencies
@@ -72,7 +72,7 @@ jobs:
           echo "Building libpng12..."
           mkdir -p /tmp/build-libpng
           cd /tmp/build-libpng
-          wget https://download.sourceforge.net/libpng/libpng-1.2.59.tar.gz
+          wget https://ftp-osl.osuosl.org/pub/libpng/src/libpng12/libpng-1.2.59.tar.gz
           tar -xvzf libpng-1.2.59.tar.gz
           cd libpng-1.2.59
           # All environment variables (CC, AR, etc.) are already set from the previous step
