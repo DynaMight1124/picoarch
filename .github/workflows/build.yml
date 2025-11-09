@@ -1,6 +1,3 @@
-# This is a GitHub Actions workflow file.
-# To use it, create a directory in your repository: .github/workflows/
-
 name: Build PicoArch for FunKey-S
 
 # Controls when the action will run.
@@ -15,6 +12,7 @@ on:
 jobs:
   # A single job called "build"
   build:
+    # The type of runner that the job will run on
     runs-on: ubuntu-22.04
 
     steps:
@@ -84,22 +82,24 @@ jobs:
           cd /
           rm -rf /tmp/build-libpng
           echo "libpng12 installed."
-          
+
       # Step 5: Check out repository
       - name: Check out repository
         uses: actions/checkout@v4
         with:
           submodules: 'recursive'
 
-      # Step 6: Compile PicoArch
-      - name: Compile PicoArch
+      # Step 6: Compile PicoArch and create zip
+      - name: Compile and Package PicoArch
         run: |
-          echo "Starting PicoArch build..."
-          make platform=funkey-s picoarch-funkey-s.zip
+          echo "Starting PicoArch build and packaging..."
+          make platform=funkey-s picoarch-funkey-s.zip cores-funkey-s.zip
 
       # Step 7: Upload Build Artifact
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: PicoArch-FunKeyS-Build
-          path: ./picoarch-funkey-s.zip
+          name: PicoArch-FunKeyS-Package
+          path: |
+            ./picoarch-funkey-s.zip
+            ./cores-funkey-s.zip
