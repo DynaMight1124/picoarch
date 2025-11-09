@@ -25,7 +25,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             ca-certificates wget rsync tar file build-essential \
             git pkg-config patch \
-            libsdl1.2-dev libasound2-dev libncurses-dev
+            libsdl1.2-dev libasound2-dev libncurses-dev mksquashfs
 
       # Step 2: Download and Install FunKey-S SDK
       - name: Download and Install FunKey-S SDK
@@ -99,7 +99,7 @@ jobs:
         working-directory: ./picoarch
         run: |
           echo "Starting PicoArch build..."
-          platform=funkey-s picoarch-funkey-s.zip
+          make platform=funkey-s picoarch-funkey-s.zip
 
       # Step 7: Upload Build Artifact
       - name: Upload Build Artifact
