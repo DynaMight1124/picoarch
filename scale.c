@@ -481,7 +481,7 @@ static void scale_select_scaler(unsigned w, unsigned h, size_t pitch) {
 
 	/* MAME 2000 sets resolutions / aspect ratio without notifying
 	 * of changes, new should always override old */
-	if (!strcmp(core_name, "mame2000")) {
+	if (strstr(core_name, "mame2000")) {
 		current_aspect_ratio = ((double)w / (double)h);
 	}
 
@@ -494,7 +494,7 @@ static void scale_select_scaler(unsigned w, unsigned h, size_t pitch) {
 
 	if (scale_size == SCALE_SIZE_NATIVE) {
 		/* Perfect 1:1 passthrough: behave exactly like SCALED for trivial cases */
-		if (!strcmp(core_name, "mame2000") && video_width == 240 && video_height == 320) {
+		if (strstr(core_name, "mame2000") && video_width == 240 && video_height == 320) {
 			scale_size = SCALE_SIZE_SCALED; /* force reuse of the scaled path */
 			scale_select_scaler(w, h, pitch);
 			return;
@@ -559,12 +559,12 @@ static void scale_select_scaler(unsigned w, unsigned h, size_t pitch) {
 		}
 	} else if (scale_size == SCALE_SIZE_CROPPED) {
 		/* Perfect 1:1 passthrough: behave exactly like NATIVE for trivial cases */
-		if (w == 320 || w == 384 || h == 240) {
+		if (w == 320 || w == 384 || h == 240 || strstr(core_name, "pcsx")) {
 			scale_size = SCALE_SIZE_NATIVE; /* force reuse of the native path */
 			scale_select_scaler(w, h, pitch);
 			return;
 		/* Perfect 1:1 passthrough: behave exactly like SCALED for trivial cases */
-		} else if (!strcmp(core_name, "mame2000") && video_width == 240 && video_height == 320) {
+		} else if (strstr(core_name, "mame2000") && video_width == 240 && video_height == 320) {
 			scale_size = SCALE_SIZE_SCALED; /* force reuse of the scaled path */
 			scale_select_scaler(w, h, pitch);
 			return;
@@ -577,11 +577,11 @@ static void scale_select_scaler(unsigned w, unsigned h, size_t pitch) {
 		dst_h = SCREEN_HEIGHT;
 		dst_w = (unsigned)(dst_h * src_aspect + 0.5);
 
-		/* Limit width to avoid excessive overscan */
-		if (dst_w > 320) {
+		/* Limit width to avoid excessive overscan (except for GBA) */
+		if (dst_w > 320 && w != 240 && h != 160) {
 			dst_w = 320;
 			/* Do not apply aspect ratio for PS1 (must be always 4:3) and CPS1/2/3 (force 10:7) */
-			if (!strstr(core_name, "pcsx") && (w != 384 && h != 224)) {
+			if (w != 384 && h != 224) {
 				dst_h = (unsigned)(dst_w / src_aspect + 0.5);
 			}
 		}
@@ -603,7 +603,7 @@ static void scale_select_scaler(unsigned w, unsigned h, size_t pitch) {
 		 * but we still allow a small horizontal centering adjustment (visual_center_fix).
 		 * This is safe because we clamp the computed offsets afterwards.
 		 */
-		bool special_portrait_mame = (!strcmp(core_name, "mame2000") && w == 240 && h == 320);
+		bool special_portrait_mame = (strstr(core_name, "mame2000") && w == 240 && h == 320);
 
 		if (will_crop || special_portrait_mame) {
 			/* compute nominal crop center */
@@ -617,7 +617,7 @@ static void scale_select_scaler(unsigned w, unsigned h, size_t pitch) {
 			else if (w == 160 && h == 144) { visual_center_fix = 5;  } /* GB, GBC, GG */
 			else if (w == 160 && h == 152) { visual_center_fix = 2;  } /* NGP */
 			else if (w == 224)             { visual_center_fix = 12; } /* WonderSwan */
-			else if (w == 240)             { visual_center_fix = 10; } /* GBA */
+			else if (w == 240)             { visual_center_fix = 20; } /* GBA */
 			else if (w == 304)             { visual_center_fix = 2;  } /* Neo-Geo */
 			else if (w == 384)             { visual_center_fix = -8; } /* CPS1/2/3 */
 			else if (w == 512)             { visual_center_fix = -24;} /* PS1 */

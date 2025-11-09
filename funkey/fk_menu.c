@@ -1140,13 +1140,14 @@ int FK_RunMenu(SDL_Surface *screen)
 							do {
 								menu_aspect_ratio = (!menu_aspect_ratio)?(NB_ASPECT_RATIOS_TYPES-1):(menu_aspect_ratio-1);
 							} while (
+								// Remove aspect ratios from the FunKey menu (MENU button => SDLK_q) in some cases
 								((video_width == 320 || video_width == 384 || video_height == 240) &&
 								menu_aspect_ratio == ASPECT_RATIOS_TYPE_CROPPED) ||
 								((video_width == 240 && video_height == 160) &&
 								menu_aspect_ratio == ASPECT_RATIOS_TYPE_SCALED) ||
-								((!strcmp(core_name, "mame2000") && video_width == 240 && video_height == 320) &&
+								(((strstr(core_name, "mame2000") && video_width == 240 && video_height == 320) || strstr(core_name, "pcsx")) &&
 								menu_aspect_ratio == ASPECT_RATIOS_TYPE_CROPPED) ||
-								((!strcmp(core_name, "mame2000") && video_width == 240 && video_height == 320) &&
+								((strstr(core_name, "mame2000") && video_width == 240 && video_height == 320) &&
 								menu_aspect_ratio == ASPECT_RATIOS_TYPE_NATIVE)
 							);
 							update_aspect_ratio();
@@ -1221,13 +1222,14 @@ int FK_RunMenu(SDL_Surface *screen)
 							do {
 								menu_aspect_ratio = (menu_aspect_ratio+1)%NB_ASPECT_RATIOS_TYPES;
 							} while (
+								// Remove aspect ratios from the FunKey menu (MENU button => SDLK_q) in some cases
 								((video_width == 320 || video_width == 384 || video_height == 240) &&
 								menu_aspect_ratio == ASPECT_RATIOS_TYPE_CROPPED) ||
 								((video_width == 240 && video_height == 160) &&
 								menu_aspect_ratio == ASPECT_RATIOS_TYPE_SCALED) ||
-								((!strcmp(core_name, "mame2000") && video_width == 240 && video_height == 320) &&
+								(((strstr(core_name, "mame2000") && video_width == 240 && video_height == 320) || strstr(core_name, "pcsx")) &&
 								menu_aspect_ratio == ASPECT_RATIOS_TYPE_CROPPED) ||
-								((!strcmp(core_name, "mame2000") && video_width == 240 && video_height == 320) &&
+								((strstr(core_name, "mame2000") && video_width == 240 && video_height == 320) &&
 								menu_aspect_ratio == ASPECT_RATIOS_TYPE_NATIVE)
 							);
 							update_aspect_ratio();
@@ -1519,22 +1521,23 @@ void FK_NextAspectRatio(void)
 	read_aspect_ratio();
 	menu_aspect_ratio = (menu_aspect_ratio + 1) % NB_ASPECT_RATIOS_TYPES;
 
-	// Hide the CROPPED aspect ratio in the FunKey menu in some cases
+	// Remove the CROPPED mode from the aspect ratio cycle (Fn+down => SDLK_h)
 	if ((video_width == 320 || video_width == 384 || video_height == 240) ||
-		(!strcmp(core_name, "mame2000") && video_width == 240 && video_height == 320)) {
-		if (!strcmp(aspect_ratio_name[menu_aspect_ratio], "CROPPED")) {
+		(strstr(core_name, "mame2000") && video_width == 240 && video_height == 320) ||
+		(strstr(core_name, "pcsx"))) {
+		if (strstr(aspect_ratio_name[menu_aspect_ratio], "CROPPED")) {
 			menu_aspect_ratio = (menu_aspect_ratio + 1) % NB_ASPECT_RATIOS_TYPES;
 		}
 	}
 	// ... same for SCALED aspect ratio (GBA)
 	if (video_width == 240 && video_height == 160) {
-		if (!strcmp(aspect_ratio_name[menu_aspect_ratio], "SCALED")) {
+		if (strstr(aspect_ratio_name[menu_aspect_ratio], "SCALED")) {
 			menu_aspect_ratio = (menu_aspect_ratio + 1) % NB_ASPECT_RATIOS_TYPES;
 		}
 	}
 	// ... and for NATIVE aspect ratio (MAME 2000)
-	if (!strcmp(core_name, "mame2000") && video_width == 240 && video_height == 320) {
-		if (!strcmp(aspect_ratio_name[menu_aspect_ratio], "NATIVE")) {
+	if (strstr(core_name, "mame2000") && video_width == 240 && video_height == 320) {
+		if (strstr(aspect_ratio_name[menu_aspect_ratio], "NATIVE")) {
 			menu_aspect_ratio = (menu_aspect_ratio + 1) % NB_ASPECT_RATIOS_TYPES;
 		}
 	}
