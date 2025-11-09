@@ -1,0 +1,117 @@
+# This is a GitHub Actions workflow file.
+# To use it, create a directory in your repository: .github/workflows/
+
+name: Build PicoArch for FunKey-S
+
+# Controls when the action will run.
+on:
+  # Triggers the workflow on push events to the main branch
+  push:
+    branches: [ "main", "master" ]
+  
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  # A single job called "build"
+  build:
+    runs-on: ubuntu-20.04
+
+    steps:
+      # Step 1: Install base dependencies
+      - name: Install Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ca-certificates wget rsync tar file build-essential \
+            git pkg-config patch \
+            libsdl1.2-dev libasound2-dev libncurses-dev
+
+      # Step 2: Download and Install FunKey-S SDK
+      - name: Download and Install FunKey-S SDK
+        run: |
+          echo "Downloading FunKey-S SDK..."
+          wget -qO /tmp/toolchain.tar.gz https://github.com/DrUm78/FunKey-OS/releases/download/FunKey-OS-DrUm78/FunKey-sdk-2.3.0.tar.gz
+          echo "Extracting SDK to /opt/FunKey-sdk-2.3.0..."
+          sudo mkdir -p /opt/FunKey-sdk-2.3.0
+          sudo tar zxvf /tmp/toolchain.tar.gz -C /opt
+          rm /tmp/toolchain.tar.gz
+          echo "Relocating SDK..."
+          cd /opt/FunKey-sdk-2.3.0
+          sudo chmod +x relocate-sdk.sh
+          sudo ./relocate-sdk.sh
+
+      # Step 3: Set Cross-Compile Environment
+      - name: Set Cross-Compile Environment
+        run: |
+          echo "Setting up environment variables for GITHUB_ENV and GITHUB_PATH..."
+          echo "SDK_ROOT=/opt/FunKey-sdk-2.3.0" >> $GITHUB_ENV
+          echo "TOOLCHAIN_PREFIX=arm-funkey-linux-musleabihf" >> $GITHUB_ENV
+          
+          echo "TOOLBIN=/opt/FunKey-sdk-2.3.0/bin/arm-funkey-linux-musleabihf-" >> $GITHUB_ENV
+          echo "SYSROOT=/opt/FunKey-sdk-2.3.0/arm-funkey-linux-musleabihf/sysroot" >> $GITHUB_ENV
+          
+          echo "CROSS_COMPILE=/opt/FunKey-sdk-2.3.0/bin/arm-funkey-linux-musleabihf-" >> $GITHUB_ENV
+          echo "CC=/opt/FunKey-sdk-2.3.0/bin/arm-funkey-linux-musleabihf-gcc" >> $GITHUB_ENV
+          echo "CXX=/opt/FunKey-sdk-2.3.0/bin/arm-funkey-linux-musleabihf-g++" >> $GITHUB_ENV
+          echo "LD=/opt/FunKey-sdk-2.3.0/bin/arm-funkey-linux-musleabihf-ld" >> $GITHUB_ENV
+          echo "AS=/opt/FunKey-sdk-2.3.0/bin/arm-funkey-linux-musleabihf-as" >> $GITHUB_ENV
+          echo "AR=/opt/FunKey-sdk-2.3.0/bin/arm-funkey-linux-musleabihf-ar" >> $GITHUB_ENV
+          echo "RANLIB=/opt/FunKey-sdk-2.3.0/bin/arm-funkey-linux-musleabihf-ranlib" >> $GITHUB_ENV
+          echo "STRIP=/opt/FunKey-sdk-2.3.0/bin/arm-funkey-linux-musleabihf-strip" >> $GITHUB_ENV
+          
+          echo "PKG_CONFIG_PATH=/opt/FunKey-sdk-2.3.0/arm-funkey-linux-musleabihf/sysroot/usr/lib/pkgconfig" >> $GITHUB_ENV
+          echo "PKG_CONFIG_LIBDIR=/opt/FunKey-sdk-2.3.0/arm-funkey-linux-musleabihf/sysroot/usr/lib/pkgconfig" >> $GITHUB_ENV
+          echo "PKG_CONFIG_SYSROOT_DIR=/opt/FunKey-sdk-2.3.0/arm-funkey-linux-musleabihf/sysroot" >> $GITHUB_ENV
+          
+          echo "/opt/FunKey-sdk-2.3.0/bin" >> $GITHUB_PATH
+
+      # Step 4: Build and Install libpng12
+      - name: Build and Install libpng12
+        run: |
+          echo "Building libpng12..."
+          mkdir -p /tmp/build-libpng
+          cd /tmp/build-libpng
+          wget https://download.sourceforge.net/libpng/libpng-1.2.59.tar.gz
+          tar -xvzf libpng-1.2.59.tar.gz
+          cd libpng-1.2.59
+          # All environment variables (CC, AR, etc.) are already set from the previous step
+          ./configure \
+            --host=${{ env.TOOLCHAIN_PREFIX }} \
+            --prefix=${{ env.SYSROOT }}/usr
+          make
+          sudo make install
+          cd /
+          rm -rf /tmp/build-libpng
+          echo "libpng12 installed."
+
+      # Step 5: Clone PicoArch
+      - name: Clone PicoArch
+        run: |
+          echo "Cloning PicoArch and its submodules..."
+          git clone --recurse-submodules https://github.com/DrUm78/picoarch
+          cd picoarch
+          echo "PicoArch cloned to commit:"
+          git log -1
+
+      # Step 6: Compile PicoArch
+      - name: Compile PicoArch
+        working-directory: ./picoarch
+        run: |
+          echo "Starting PicoArch build..."
+          make platform=funkey-s
+
+      # Step 7: Package Compiled Cores
+      - name: Package Compiled Cores
+        working-directory: ./picoarch
+        run: |
+          echo "Packaging *.libretro.so files..."
+          ls -l *libretro.so
+          zip PicoArch.zip *libretro.so
+
+      # Step 8: Upload Build Artifact
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PicoArch-FunKeyS-Build
+          path: ./picoarch/PicoArch.zip
