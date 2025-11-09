@@ -94,24 +94,16 @@ jobs:
           echo "PicoArch cloned to commit:"
           git log -1
 
-      # Step 6: Compile PicoArch
+# Step 6: Compile PicoArch
       - name: Compile PicoArch
         working-directory: ./picoarch
         run: |
           echo "Starting PicoArch build..."
-          make platform=funkey-s
+          platform=funkey-s picoarch-funkey-s.zip
 
-      # Step 7: Package Compiled Cores
-      - name: Package Compiled Cores
-        working-directory: ./picoarch
-        run: |
-          echo "Packaging *.libretro.so files..."
-          ls -l *libretro.so
-          zip PicoArch.zip *libretro.so
-
-      # Step 8: Upload Build Artifact
+      # Step 7: Upload Build Artifact
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
           name: PicoArch-FunKeyS-Build
-          path: ./picoarch/PicoArch.zip
+          path: ./picoarch/picoarch-funkey-s.zip
