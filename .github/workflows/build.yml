@@ -84,19 +84,15 @@ jobs:
           cd /
           rm -rf /tmp/build-libpng
           echo "libpng12 installed."
+          
+      # Step 5: Check out repository
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
 
-      # Step 5: Clone PicoArch
-      - name: Clone PicoArch
-        run: |
-          echo "Cloning PicoArch and its submodules..."
-          git clone --recurse-submodules https://github.com/DrUm78/picoarch
-          cd picoarch
-          echo "PicoArch cloned to commit:"
-          git log -1
-
-# Step 6: Compile PicoArch
+      # Step 6: Compile PicoArch
       - name: Compile PicoArch
-        working-directory: ./picoarch
         run: |
           echo "Starting PicoArch build..."
           make platform=funkey-s picoarch-funkey-s.zip
@@ -106,4 +102,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: PicoArch-FunKeyS-Build
-          path: ./picoarch/picoarch-funkey-s.zip
+          path: ./picoarch-funkey-s.zip
