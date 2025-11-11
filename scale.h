@@ -2,13 +2,13 @@
 #define __SCALE_H__
 
 #ifdef FUNKEY_S
-#define SCREEN_WIDTH 240
+#define SCREEN_WIDTH 320
 #else
 #define SCREEN_WIDTH 320
 #endif
 
 #if SCREEN_WIDTH == 240
-#define HUD_LEN 31
+#define HUD_LEN 41
 #else
 #define HUD_LEN 41
 #endif
