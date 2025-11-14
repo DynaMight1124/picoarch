@@ -12,6 +12,8 @@
 #include "funkey/fk_instant_play.h"
 #endif
 
+#define PXMAKE(r,g,b) ((((r)<<8) & 0xf800)|(((g)<<3) & 0x07e0)|((b)>>3))
+
 static int drew_alt_bg = 0;
 
 static char cores_path[MAX_PATH];
@@ -138,6 +140,26 @@ static int mh_rmcfg(int id, int keys)
 
 	return 1;
 }
+
+#ifdef FUNKEY_S
+static int mh_zoom_level(int id, int keys)
+{
+	if (keys & PBTN_LEFT)  zoom_level -= 10;
+	if (keys & PBTN_RIGHT) zoom_level += 10;
+
+	if (zoom_level < 0) zoom_level = 100;
+	if (zoom_level > 100) zoom_level = 0;
+
+	return 0;
+}
+
+static const char *mgn_zoom_level(int id, int *offs)
+{
+	static char buf[16];
+	snprintf(buf, sizeof(buf), "%d%%", zoom_level);
+	return buf;
+}
+#endif
 
 static void draw_src_bg(void) {
 	memcpy(g_menubg_ptr, g_menubg_src_ptr, g_menubg_src_h * g_menubg_src_pp * sizeof(uint16_t));
@@ -413,6 +435,23 @@ static void load_new_content(const char *fname) {
 #endif
 }
 
+static void draw_frame_credits(void)
+{
+	smalltext_out16(4, 1, "Build date: " __DATE__, PXMAKE(0xe0, 0xff, 0xe0));
+}
+
+static const char credits[] =
+	"   PicoArch rev. " REVISION "\n\n\n\n"
+	"      --- Credits ---\n\n\n"
+	" neonloop: original author\n\n"
+	" Hairo:    .sav/.srm option\n\n"
+	" DrUm78:   screen rotation,\n"
+#ifdef FUNKEY_S
+	"           cropped mode,\n"
+	"           zoomed mode,\n"
+#endif
+	"           bug fixes";
+
 static int menu_loop_disc(int id, int keys)
 {
 	static int sel = 0;
@@ -635,10 +674,10 @@ static const char h_rm_config_game[]  = "Removes game-specific config file.";
 
 static const char h_restore_def[]     = "Switches back to default settings.";
 
-static const char h_show_fps[]        = "Shows frames and vsyncs per second";
+static const char h_show_fps[]        = "Shows frames and vsyncs per second.";
 static const char h_show_cpu[]        = "Shows CPU usage (%).";
 
-#if (SCREEN_WIDTH >= 320)
+#ifndef FUNKEY_S
 static const char h_enable_drc[]      = "Dynamically adjusts audio rate for smoother video.";
 
 static const char h_audio_buffer_size[]        =
@@ -658,8 +697,8 @@ static const char h_scale_filter[]        =
 
 static const char h_use_srm[]        =
 	"Use .srm files for SRAM saves, needed for\n"
-	"compatibility with mainline retroarch saves.\n"
-	"Save file compression needs to be off in retroarch.";
+	"compatibility with mainline RetroArch saves.\n"
+	"Save file compression needs to be off in RetroArch.";
 
 static const char h_rotate_display[] =
 	"Screen orientation. Rotates by 90, 180 or 270\n"
@@ -686,10 +725,16 @@ static const char h_audio_buffer_size[]        =
 	"crackling at the cost of delayed sound.";
 
 static const char h_scale_size[]        =
-	"Scale modes. Native does no stretching.\n"
-	"Scaled keeps the correct aspect ratio.\n"
-	"Stretched uses the whole screen.\n"
-	"Cropped hides pixels on the sides.";
+	"Native does no stretching. Scaled keeps\n"
+	"the correct aspect ratio. Stretched\n"
+	"uses the whole screen. Cropped hides\n"
+	"pixels on the sides. Zoomed allows\n"
+	"manual resize.";
+
+static const char h_zoom_level[]        =
+	"Manual control of the display size.\n"
+	"Hotkey Fn+left/right can be used to\n"
+	"change the zoom level (+/-10%).";
 
 static const char h_scale_filter[]        =
 	"When stretching, how missing pixels\n"
@@ -700,12 +745,12 @@ static const char h_scale_filter[]        =
 static const char h_use_srm[]        =
 	"Use .srm files for SRAM saves,\n"
 	"needed for compatibility with mainline\n"
-	"retroarch saves. Save file compression\n"
-	"needs to be off in retroarch.";
+	"RetroArch saves. Save file compression\n"
+	"needs to be off in RetroArch.";
 
 static const char h_rotate_display[] =
-	"Screen orientation. Rotates by 90, 180\n"
-	"or 270 degrees clockwise.";
+	"Screen orientation. Rotates the display\n"
+	"by 90, 180 or 270 degrees clockwise.";
 
 static const char *men_rotate_display[] =
 {
@@ -716,7 +761,7 @@ static const char *men_rotate_display[] =
 	NULL
 };
 
-static const char *men_scale_size[] = { "Native", "Scaled", "Stretched", "Cropped", NULL };
+static const char *men_scale_size[] = { "Native", "Scaled", "Stretched", "Cropped", "Zoomed", NULL };
 #endif
 
 static const char *men_scale_filter[] = { "Nearest", "Sharp", "Smooth", NULL};
@@ -725,7 +770,8 @@ static menu_entry e_menu_video_options[] =
 {
 	mee_onoff_h      ("Show FPS",                 0, show_fps, 1, h_show_fps),
 	mee_onoff_h      ("Show CPU usage",           0, show_cpu, 1, h_show_cpu),
-	mee_enum_h       ("Screen size",              0, scale_size, men_scale_size, h_scale_size),
+	mee_enum_h       ("Display mode",             0, scale_size, men_scale_size, h_scale_size),
+	mee_cust_h       ("Zoom level",                  MB_OPT_CUSTOM, mh_zoom_level, mgn_zoom_level, h_zoom_level),
 	mee_enum_h       ("Screen rotation",          0, rotate_display, men_rotate_display, h_rotate_display),
 	mee_enum_h       ("Filter",                   0, scale_filter, men_scale_filter, h_scale_filter),
 	mee_range_h      ("Audio buffer",             0, audio_buffer_size, 1, 15, h_audio_buffer_size),
@@ -822,6 +868,10 @@ static int main_menu_handler(int id, int keys)
 	case MA_MAIN_RESET_GAME:
 		current_core.retro_reset();
 		return 1;
+	case MA_MAIN_CREDITS:
+		draw_menu_message(credits, draw_frame_credits);
+		in_menu_wait(PBTN_MOK|PBTN_MBACK, NULL, 70);
+		break;
 	case MA_MAIN_EXIT:
 		should_quit = 1;
 		return 1;
@@ -840,9 +890,10 @@ static menu_entry e_menu_main[] =
 	mee_handler_id("Load state",         MA_MAIN_LOAD_STATE,  main_menu_handler),
 	mee_handler_id("Disc control",       MA_MAIN_DISC_CTRL,   menu_loop_disc),
 	mee_handler_id("Cheats",             MA_MAIN_CHEATS,      menu_loop_cheats),
-	mee_handler   ("Options",            menu_loop_options),
+	mee_handler   ("Options",                                 menu_loop_options),
 	mee_handler_id("Reset game",         MA_MAIN_RESET_GAME,  main_menu_handler),
 	mee_handler_id("Load new game",      MA_MAIN_CONTENT_SEL, menu_loop_select_content),
+	mee_handler_id("About",              MA_MAIN_CREDITS,     main_menu_handler),
 	mee_handler_id("Exit",               MA_MAIN_EXIT,        main_menu_handler),
 	mee_end,
 };

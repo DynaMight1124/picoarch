@@ -31,6 +31,7 @@ static const struct {
 	CE_NUM(scale_size),
 	CE_NUM(scale_filter),
 	CE_NUM(rotate_display),
+	CE_NUM(zoom_level),
 };
 
 void config_write(FILE *f)

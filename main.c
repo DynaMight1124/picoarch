@@ -40,6 +40,10 @@ static emu_action eaction = EACTION_NONE;
 static uint32_t vsyncs;
 static uint32_t renders;
 
+extern int video_width;
+extern int video_height;
+extern int need_full_clear;
+
 #define UNDERRUN_THRESHOLD 50
 
 static void toggle_fast_forward(int force_off)
@@ -217,18 +221,20 @@ void set_defaults(void)
 
 	/* Sets better defaults for small screen */
 	if (SCREEN_WIDTH == 240) {
-		scale_size = SCALE_SIZE_NATIVE;
-		scale_filter = SCALE_FILTER_SMOOTH;
-		if (!strcmp(core_name, "gambatte")		||
-			!strcmp(core_name, "mednafen_lynx")	||
-			!strcmp(core_name, "mednafen_ngp")	||
-			!strcmp(core_name, "pokemini")) {
+		if (strstr(core_name, "gambatte") ||
+			strstr(core_name, "lynx") ||
+			strstr(core_name, "ngp") ||
+			strstr(core_name, "pokemini")) {
 			scale_size = SCALE_SIZE_SCALED;
+			scale_filter = SCALE_FILTER_SMOOTH;
+		} else {
+			scale_size = SCALE_SIZE_NATIVE;
 			scale_filter = SCALE_FILTER_SMOOTH;
 		}
 	}
 
 	scale_update_scaler();
+	need_full_clear = 1;
 
 	if (current_audio_buffer_size < audio_buffer_size)
 		current_audio_buffer_size = audio_buffer_size;
@@ -349,6 +355,14 @@ void load_config_keys(void)
 			if (defbinds[IN_BIND_OFFS(i, IN_BINDTYPE_EMU)] == 1 << EACTION_NEXT_SCALER) {
 				in_bind_key(0, i, 1 << EACTION_NEXT_SCALER, IN_BINDTYPE_EMU, 0);
 			}
+			/* Force fn+j to be bound to decrease zoom level (-10%) */
+			if (defbinds[IN_BIND_OFFS(i, IN_BINDTYPE_EMU)] == 1 << EACTION_PREVIOUS_ZOOM_STEP) {
+				in_bind_key(0, i, 1 << EACTION_PREVIOUS_ZOOM_STEP, IN_BINDTYPE_EMU, 0);
+			}
+			/* Force fn+i to be bound to increase zoom level (+10%) */
+			if (defbinds[IN_BIND_OFFS(i, IN_BINDTYPE_EMU)] == 1 << EACTION_NEXT_ZOOM_STEP) {
+				in_bind_key(0, i, 1 << EACTION_NEXT_ZOOM_STEP, IN_BINDTYPE_EMU, 0);
+			}
 #endif
 		}
 	}
@@ -456,6 +470,46 @@ static void perform_emu_action(void) {
 #ifdef FUNKEY_S
 	case EACTION_NEXT_SCALER:
 		FK_NextAspectRatio();
+		break;
+	case EACTION_PREVIOUS_ZOOM_STEP:
+		if (zoom_level >= 0) {
+			zoom_level = MAX(0, zoom_level - 10);
+			/* force zoom mode */
+			scale_size = SCALE_SIZE_ZOOMED;
+			if (video_width <= 240) {
+				scale_filter = SCALE_FILTER_SMOOTH;
+			} else {
+				scale_filter = SCALE_FILTER_NEAREST;
+			}
+			scale_update_scaler();
+			need_full_clear = 1;
+			/* ---- notification FunKey shell ---- */
+			char shell_cmd[128];
+			snprintf(shell_cmd, sizeof(shell_cmd),
+			"%s %d \"    DISPLAY MODE: ZOOMED %d%%%%\"",
+			SHELL_CMD_NOTIF_SET, NOTIF_SECONDS_DISP, zoom_level);
+			system(shell_cmd);
+		}
+		break;
+	case EACTION_NEXT_ZOOM_STEP:
+		if (zoom_level <= 100) {
+			zoom_level = MIN(100, zoom_level + 10);
+			/* force zoom mode */
+			scale_size = SCALE_SIZE_ZOOMED;
+			if (video_width <= 240) {
+				scale_filter = SCALE_FILTER_SMOOTH;
+			} else {
+				scale_filter = SCALE_FILTER_NEAREST;
+			}
+			scale_update_scaler();
+			need_full_clear = 1;
+			/* ---- notification FunKey shell ---- */
+			char shell_cmd[128];
+			snprintf(shell_cmd, sizeof(shell_cmd),
+			"%s %d \"    DISPLAY MODE: ZOOMED %d%%%%\"",
+			SHELL_CMD_NOTIF_SET, NOTIF_SECONDS_DISP, zoom_level);
+			system(shell_cmd);
+		}
 		break;
 #endif
 	case EACTION_QUIT:

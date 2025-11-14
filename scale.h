@@ -22,6 +22,7 @@ enum scale_size {
 	SCALE_SIZE_SCALED,
 	SCALE_SIZE_STRETCHED,
 	SCALE_SIZE_CROPPED,
+	SCALE_SIZE_ZOOMED,
 };
 
 enum scale_filter {

@@ -15,6 +15,7 @@ int enable_audio;
 int enable_drc;
 int use_srm;
 int rotate_display = 0; // 0 = normal, 1 = 90° CW, 2 = 180°, 3 = 270° CW
+int zoom_level = 0; // 0–100
 unsigned audio_buffer_size;
 enum scale_size scale_size;
 enum scale_filter scale_filter;
