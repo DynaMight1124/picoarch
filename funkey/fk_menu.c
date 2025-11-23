@@ -223,8 +223,8 @@ static void read_aspect_ratio(void)
 	case SCALE_SIZE_CROPPED:
 		menu_aspect_ratio = ASPECT_RATIOS_TYPE_CROPPED;
 		break;
-	case SCALE_SIZE_ZOOMED:
-		menu_aspect_ratio = ASPECT_RATIOS_TYPE_ZOOMED;
+	case SCALE_SIZE_MANUAL:
+		menu_aspect_ratio = ASPECT_RATIOS_TYPE_MANUAL;
 		break;
 	}
 }
@@ -252,8 +252,8 @@ static void update_aspect_ratio(void)
 			scale_filter = SCALE_FILTER_NEAREST;
 		}
 		break;
-	case ASPECT_RATIOS_TYPE_ZOOMED:
-		scale_size = SCALE_SIZE_ZOOMED;
+	case ASPECT_RATIOS_TYPE_MANUAL:
+		scale_size = SCALE_SIZE_MANUAL;
 		if (video_width <= 240) {
 			scale_filter = SCALE_FILTER_SMOOTH;
 		} else {
@@ -1152,19 +1152,7 @@ int FK_RunMenu(SDL_Surface *screen)
 #ifdef HAS_MENU_ASPECT_RATIO
 						  if(idx_menus[menuItem] == MENU_TYPE_ASPECT_RATIO){
 							MENU_DEBUG_PRINTF("Aspect Ratio DOWN\n");
-							do {
-								menu_aspect_ratio = (!menu_aspect_ratio)?(NB_ASPECT_RATIOS_TYPES-1):(menu_aspect_ratio-1);
-							} while (
-								// Remove aspect ratios from the FunKey menu (MENU button => SDLK_q) in some cases
-								((video_height == 240) &&
-								menu_aspect_ratio == ASPECT_RATIOS_TYPE_CROPPED) ||
-								((video_width == 240 && video_height == 160) &&
-								menu_aspect_ratio == ASPECT_RATIOS_TYPE_SCALED) ||
-								(((strstr(core_name, "mame2000") && video_width == 240 && video_height == 320) || strstr(core_name, "pcsx")) &&
-								menu_aspect_ratio == ASPECT_RATIOS_TYPE_CROPPED) ||
-								((strstr(core_name, "mame2000") && video_width == 240 && video_height == 320) &&
-								menu_aspect_ratio == ASPECT_RATIOS_TYPE_NATIVE)
-							);
+							menu_aspect_ratio = (!menu_aspect_ratio)?(NB_ASPECT_RATIOS_TYPES-1):(menu_aspect_ratio-1);
 							update_aspect_ratio();
 							/// ------ Refresh screen ------
 							screen_refresh = 1;
@@ -1234,19 +1222,7 @@ int FK_RunMenu(SDL_Surface *screen)
 #ifdef HAS_MENU_ASPECT_RATIO
 						  if(idx_menus[menuItem] == MENU_TYPE_ASPECT_RATIO){
 							MENU_DEBUG_PRINTF("Aspect Ratio UP\n");
-							do {
-								menu_aspect_ratio = (menu_aspect_ratio+1)%NB_ASPECT_RATIOS_TYPES;
-							} while (
-								// Remove aspect ratios from the FunKey menu (MENU button => SDLK_q) in some cases
-								((video_height == 240) &&
-								menu_aspect_ratio == ASPECT_RATIOS_TYPE_CROPPED) ||
-								((video_width == 240 && video_height == 160) &&
-								menu_aspect_ratio == ASPECT_RATIOS_TYPE_SCALED) ||
-								(((strstr(core_name, "mame2000") && video_width == 240 && video_height == 320) || strstr(core_name, "pcsx")) &&
-								menu_aspect_ratio == ASPECT_RATIOS_TYPE_CROPPED) ||
-								((strstr(core_name, "mame2000") && video_width == 240 && video_height == 320) &&
-								menu_aspect_ratio == ASPECT_RATIOS_TYPE_NATIVE)
-							);
+							menu_aspect_ratio = (menu_aspect_ratio+1)%NB_ASPECT_RATIOS_TYPES;
 							update_aspect_ratio();
 							/// ------ Refresh screen ------
 							screen_refresh = 1;
@@ -1535,36 +1511,14 @@ void FK_NextAspectRatio(void)
 
 	read_aspect_ratio();
 	menu_aspect_ratio = (menu_aspect_ratio + 1) % NB_ASPECT_RATIOS_TYPES;
-
-	// Remove the CROPPED mode from the aspect ratio cycle (Fn+down => SDLK_h)
-	if ((video_height == 240) ||
-		(strstr(core_name, "mame2000") && video_width == 240 && video_height == 320) ||
-		(strstr(core_name, "pcsx"))) {
-		if (strstr(aspect_ratio_name[menu_aspect_ratio], "CROPPED")) {
-			menu_aspect_ratio = (menu_aspect_ratio + 1) % NB_ASPECT_RATIOS_TYPES;
-		}
-	}
-	// ... same for SCALED aspect ratio (GBA)
-	if (video_width == 240 && video_height == 160) {
-		if (strstr(aspect_ratio_name[menu_aspect_ratio], "SCALED")) {
-			menu_aspect_ratio = (menu_aspect_ratio + 1) % NB_ASPECT_RATIOS_TYPES;
-		}
-	}
-	// ... and for NATIVE aspect ratio (MAME 2000)
-	if (strstr(core_name, "mame2000") && video_width == 240 && video_height == 320) {
-		if (strstr(aspect_ratio_name[menu_aspect_ratio], "NATIVE")) {
-			menu_aspect_ratio = (menu_aspect_ratio + 1) % NB_ASPECT_RATIOS_TYPES;
-		}
-	}
-
 	update_aspect_ratio();
 	scale_update_scaler();
 	plat_video_menu_leave();
 
 	const char *notif_name = aspect_ratio_name[menu_aspect_ratio];
 
-	if (menu_aspect_ratio == ASPECT_RATIOS_TYPE_ZOOMED){
-		snprintf(shell_cmd, 100, "%s %d \"    DISPLAY MODE: ZOOMED %d%%%%\"",
+	if (menu_aspect_ratio == ASPECT_RATIOS_TYPE_MANUAL){
+		snprintf(shell_cmd, 100, "%s %d \"    DISPLAY MODE: MANUAL %d%%%%\"",
 		SHELL_CMD_NOTIF_SET, NOTIF_SECONDS_DISP, zoom_level);
 	} else {
 		snprintf(shell_cmd, 100, "%s %d \"    DISPLAY MODE: %s\"",

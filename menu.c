@@ -147,8 +147,8 @@ static int mh_zoom_level(int id, int keys)
 	if (keys & PBTN_LEFT)  zoom_level -= 10;
 	if (keys & PBTN_RIGHT) zoom_level += 10;
 
-	if (zoom_level < 0) zoom_level = 100;
-	if (zoom_level > 100) zoom_level = 0;
+	if (zoom_level < 0) zoom_level = 0;
+	if (zoom_level > 100) zoom_level = 100;
 
 	return 0;
 }
@@ -448,7 +448,8 @@ static const char credits[] =
 	" DrUm78:   screen rotation,\n"
 #ifdef FUNKEY_S
 	"           cropped mode,\n"
-	"           zoomed mode,\n"
+	"           manual mode,\n"
+	"           screen panning,\n"
 #endif
 	"           bug fixes";
 
@@ -686,14 +687,14 @@ static const char h_audio_buffer_size[]        =
 	"cost of delayed sound.";
 
 static const char h_scale_size[]        =
-	"How much to stretch the screen when scaling. Native\n"
-	"does no stretching. Scaled uses the correct aspect\n"
-	"ratio. Stretched uses the whole screen.";
+	"How much to stretch the screen when scaling. NATIVE\n"
+	"does no stretching. SCALED uses the correct aspect\n"
+	"ratio. STRETCHED uses the whole screen.";
 
 static const char h_scale_filter[]        =
 	"When stretching, how missing pixels are filled.\n"
-	"Nearest copies the last pixel. Sharp keeps pixels\n"
-	"aligned where possible. Smooth adds a blur effect.";
+	"NEAREST copies the last pixel. SHARP keeps pixels\n"
+	"aligned where possible. SMOOTH adds a blur effect.";
 
 static const char h_use_srm[]        =
 	"Use .srm files for SRAM saves, needed for\n"
@@ -707,13 +708,13 @@ static const char h_rotate_display[] =
 static const char *men_rotate_display[] =
 {
 	"OFF",
-	"90 degrees",
-	"180 degrees",
-	"270 degrees",
+	"90 clockwise",
+	"180 clockwise",
+	"270 clockwise",
 	NULL
 };
 
-static const char *men_scale_size[] = { "Native", "Scaled", "Stretched", NULL };
+static const char *men_scale_size[] = { "NATIVE", "SCALED", "STRETCHED", NULL };
 #else
 static const char h_enable_drc[]      =
 	"Dynamically adjusts audio rate for\n"
@@ -725,22 +726,22 @@ static const char h_audio_buffer_size[]        =
 	"crackling at the cost of delayed sound.";
 
 static const char h_scale_size[]        =
-	"Native does no stretching. Scaled keeps\n"
-	"the correct aspect ratio. Stretched\n"
-	"uses the whole screen. Cropped hides\n"
-	"pixels on the sides. Zoomed allows\n"
-	"manual resize.";
+	"NATIVE does no stretching. SCALED keeps\n"
+	"the correct aspect ratio. STRETCHED\n"
+	"uses the whole screen. CROPPED hides\n"
+	"pixels on the sides. MANUAL allows\n"
+	"resizing beyond the screen limit.";
 
 static const char h_zoom_level[]        =
-	"Manual control of the display size.\n"
-	"Hotkey Fn+left/right can be used to\n"
-	"change the zoom level (+/-10%).";
+	"Control the zoom level of the MANUAL\n"
+	"mode. Hotkey Fn+left/right can be also\n"
+	"used to change the zoom level (+/-10%).";
 
 static const char h_scale_filter[]        =
 	"When stretching, how missing pixels\n"
-	"are filled. Nearest copies the last\n"
-	"pixel. Sharp tries to keep pixels\n"
-	"aligned. Smooth adds a blur effect.";
+	"are filled. NEAREST copies the last\n"
+	"pixel. SHARP tries to keep pixels\n"
+	"aligned. SMOOTH adds a blur effect.";
 
 static const char h_use_srm[]        =
 	"Use .srm files for SRAM saves,\n"
@@ -750,21 +751,35 @@ static const char h_use_srm[]        =
 
 static const char h_rotate_display[] =
 	"Screen orientation. Rotates the display\n"
-	"by 90, 180 or 270 degrees clockwise.";
+	"by 90, 180 or 270 degrees CLOCKWISE.";
+
+static const char h_pan_display[] =
+	"Viewport position. Sets the focus on\n"
+	"the LEFT or on the RIGHT part of the\n"
+	"screen when the game width exceeds 240\n"
+	"pixels.";
 
 static const char *men_rotate_display[] =
 {
 	"OFF",
-	"90 deg.",
-	"180 deg.",
-	"270 deg.",
+	"90CW",
+	"180CW",
+	"270CW",
 	NULL
 };
 
-static const char *men_scale_size[] = { "Native", "Scaled", "Stretched", "Cropped", "Zoomed", NULL };
+static const char *men_pan_display[] =
+{
+	"OFF",
+	"LEFT",
+	"RIGHT",
+	NULL
+};
+
+static const char *men_scale_size[] = { "NATIVE", "SCALED", "STRETCHED", "CROPPED", "MANUAL", NULL };
 #endif
 
-static const char *men_scale_filter[] = { "Nearest", "Sharp", "Smooth", NULL};
+static const char *men_scale_filter[] = { "NEAREST", "SHARP", "SMOOTH", NULL};
 
 static menu_entry e_menu_video_options[] =
 {
@@ -772,6 +787,7 @@ static menu_entry e_menu_video_options[] =
 	mee_onoff_h      ("Show CPU usage",           0, show_cpu, 1, h_show_cpu),
 	mee_enum_h       ("Display mode",             0, scale_size, men_scale_size, h_scale_size),
 	mee_cust_h       ("Zoom level",                  MB_OPT_CUSTOM, mh_zoom_level, mgn_zoom_level, h_zoom_level),
+	mee_enum_h       ("Screen panning",           0, pan_display, men_pan_display, h_pan_display),
 	mee_enum_h       ("Screen rotation",          0, rotate_display, men_rotate_display, h_rotate_display),
 	mee_enum_h       ("Filter",                   0, scale_filter, men_scale_filter, h_scale_filter),
 	mee_range_h      ("Audio buffer",             0, audio_buffer_size, 1, 15, h_audio_buffer_size),
@@ -842,7 +858,7 @@ static menu_entry e_menu_options[] =
 	mee_handler   ("Audio and video",    menu_loop_video_options),
 	mee_handler_id("Emulator options",   MA_OPT_CORE_OPTS,    menu_loop_core_options),
 	mee_handler_id("Player controls",    MA_CTRL_PLAYER1,     key_config_loop_wrap),
-	mee_handler_id("Emulator controls",  MA_CTRL_EMU,         key_config_loop_wrap),
+	mee_handler_id("Emulator hotkeys",   MA_CTRL_EMU,         key_config_loop_wrap),
 	mee_handler   ("Save config",        menu_loop_config_options),
 	mee_end,
 };
@@ -870,7 +886,7 @@ static int main_menu_handler(int id, int keys)
 		return 1;
 	case MA_MAIN_CREDITS:
 		draw_menu_message(credits, draw_frame_credits);
-		in_menu_wait(PBTN_MOK|PBTN_MBACK, NULL, 70);
+		in_menu_wait(PBTN_MENU|PBTN_MBACK, NULL, 70);
 		break;
 	case MA_MAIN_EXIT:
 		should_quit = 1;

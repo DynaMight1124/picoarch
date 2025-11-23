@@ -3,6 +3,13 @@
 #include "libretro.h"
 #include "scale.h"
 
+typedef enum {
+    PAN_DISPLAY_OFF,
+    PAN_DISPLAY_LEFT,
+    PAN_DISPLAY_RIGHT
+} pan_display_t;
+
+extern pan_display_t pan_display; // PAN_DISPLAY_OFF, PAN_DISPLAY_LEFT, PAN_DISPLAY_RIGHT
 extern int show_fps;
 extern int show_cpu;
 extern int show_hud;

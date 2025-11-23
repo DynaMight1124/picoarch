@@ -475,7 +475,7 @@ static void perform_emu_action(void) {
 		if (zoom_level >= 0) {
 			zoom_level = MAX(0, zoom_level - 10);
 			/* force zoom mode */
-			scale_size = SCALE_SIZE_ZOOMED;
+			scale_size = SCALE_SIZE_MANUAL;
 			if (video_width <= 240) {
 				scale_filter = SCALE_FILTER_SMOOTH;
 			} else {
@@ -486,7 +486,7 @@ static void perform_emu_action(void) {
 			/* ---- notification FunKey shell ---- */
 			char shell_cmd[128];
 			snprintf(shell_cmd, sizeof(shell_cmd),
-			"%s %d \"    DISPLAY MODE: ZOOMED %d%%%%\"",
+			"%s %d \"    DISPLAY MODE: MANUAL %d%%%%\"",
 			SHELL_CMD_NOTIF_SET, NOTIF_SECONDS_DISP, zoom_level);
 			system(shell_cmd);
 		}
@@ -495,7 +495,7 @@ static void perform_emu_action(void) {
 		if (zoom_level <= 100) {
 			zoom_level = MIN(100, zoom_level + 10);
 			/* force zoom mode */
-			scale_size = SCALE_SIZE_ZOOMED;
+			scale_size = SCALE_SIZE_MANUAL;
 			if (video_width <= 240) {
 				scale_filter = SCALE_FILTER_SMOOTH;
 			} else {
@@ -506,7 +506,7 @@ static void perform_emu_action(void) {
 			/* ---- notification FunKey shell ---- */
 			char shell_cmd[128];
 			snprintf(shell_cmd, sizeof(shell_cmd),
-			"%s %d \"    DISPLAY MODE: ZOOMED %d%%%%\"",
+			"%s %d \"    DISPLAY MODE: MANUAL %d%%%%\"",
 			SHELL_CMD_NOTIF_SET, NOTIF_SECONDS_DISP, zoom_level);
 			system(shell_cmd);
 		}
