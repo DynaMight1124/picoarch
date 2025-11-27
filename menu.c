@@ -74,12 +74,15 @@ me_bind_action me_ctrl_actions[] =
  * it. */
 me_bind_action emuctrl_actions[] =
 {
-	{ "Save State       ", 1 << EACTION_SAVE_STATE },
-	{ "Load State       ", 1 << EACTION_LOAD_STATE },
-	{ "Toggle FPS/CPU%  ", 1 << EACTION_TOGGLE_HUD },
-	{ "Toggle FF        ", 1 << EACTION_TOGGLE_FF },
-	{ "Take Screenshot  ", 1 << EACTION_SCREENSHOT },
-	{ NULL,                0 }
+	{ "Save State   ", 1 << EACTION_SAVE_STATE },
+	{ "Load State   ", 1 << EACTION_LOAD_STATE },
+	{ "FPS/CPU%     ", 1 << EACTION_TOGGLE_HUD },
+	{ "Fast Forward ", 1 << EACTION_TOGGLE_FF },
+	{ "Screenshot   ", 1 << EACTION_SCREENSHOT },
+	{ "Panning Left ", 1 << EACTION_PAN_DISPLAY_LEFT },
+	{ "Panning Right", 1 << EACTION_PAN_DISPLAY_RIGHT },
+	{ "Panning OFF  ", 1 << EACTION_PAN_DISPLAY_OFF },
+	{ NULL,            0 }
 };
 
 static int emu_check_save_file(int slot, int *time)
@@ -789,7 +792,7 @@ static menu_entry e_menu_video_options[] =
 	mee_cust_h       ("Zoom level",                  MB_OPT_CUSTOM, mh_zoom_level, mgn_zoom_level, h_zoom_level),
 	mee_enum_h       ("Screen panning",           0, pan_display, men_pan_display, h_pan_display),
 	mee_enum_h       ("Screen rotation",          0, rotate_display, men_rotate_display, h_rotate_display),
-	mee_enum_h       ("Filter",                   0, scale_filter, men_scale_filter, h_scale_filter),
+	mee_enum_h       ("Scaling filter",           0, scale_filter, men_scale_filter, h_scale_filter),
 	mee_range_h      ("Audio buffer",             0, audio_buffer_size, 1, 15, h_audio_buffer_size),
 	mee_onoff_h      ("Audio adjustment",         0, enable_drc, 1, h_enable_drc),
 	mee_end,

@@ -72,10 +72,13 @@ me_bind_action tyrquake_ctrl_actions[] =
 
 me_bind_action tyrquake_emu_actions[] =
 {
-	{ "Toggle FPS/CPU%  ", 1 << EACTION_TOGGLE_HUD },
-	{ "Toggle FF        ", 1 << EACTION_TOGGLE_FF },
-	{ "Take Screenshot  ", 1 << EACTION_SCREENSHOT },
-	{ NULL,                0 }
+	{ "FPS/CPU%     ", 1 << EACTION_TOGGLE_HUD },
+	{ "Fast Forward ", 1 << EACTION_TOGGLE_FF },
+	{ "Screenshot   ", 1 << EACTION_SCREENSHOT },
+	{ "Panning Left ", 1 << EACTION_PAN_DISPLAY_LEFT },
+	{ "Panning Right", 1 << EACTION_PAN_DISPLAY_RIGHT },
+	{ "Panning OFF  ", 1 << EACTION_PAN_DISPLAY_OFF },
+	{ NULL,            0 }
 };
 
 #define tyrquake_overrides {                           \
