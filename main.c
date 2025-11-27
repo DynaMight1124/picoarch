@@ -474,7 +474,7 @@ static void perform_emu_action(void) {
 	case EACTION_PREVIOUS_ZOOM_STEP:
 		if (zoom_level >= 0) {
 			zoom_level = MAX(0, zoom_level - 10);
-			/* force zoom mode */
+			/* force manual mode */
 			scale_size = SCALE_SIZE_MANUAL;
 			if (video_width <= 240) {
 				scale_filter = SCALE_FILTER_SMOOTH;
@@ -494,7 +494,7 @@ static void perform_emu_action(void) {
 	case EACTION_NEXT_ZOOM_STEP:
 		if (zoom_level <= 100) {
 			zoom_level = MIN(100, zoom_level + 10);
-			/* force zoom mode */
+			/* force manual mode */
 			scale_size = SCALE_SIZE_MANUAL;
 			if (video_width <= 240) {
 				scale_filter = SCALE_FILTER_SMOOTH;
@@ -510,6 +510,21 @@ static void perform_emu_action(void) {
 			SHELL_CMD_NOTIF_SET, NOTIF_SECONDS_DISP, zoom_level);
 			system(shell_cmd);
 		}
+		break;
+	case EACTION_PAN_DISPLAY_LEFT:
+		pan_display = PAN_DISPLAY_LEFT;
+		scale_update_scaler();
+		need_full_clear = 1;
+		break;
+	case EACTION_PAN_DISPLAY_RIGHT:
+		pan_display = PAN_DISPLAY_RIGHT;
+		scale_update_scaler();
+		need_full_clear = 1;
+		break;
+	case EACTION_PAN_DISPLAY_OFF:
+		pan_display = PAN_DISPLAY_OFF;
+		scale_update_scaler();
+		need_full_clear = 1;
 		break;
 #endif
 	case EACTION_QUIT:

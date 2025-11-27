@@ -870,15 +870,12 @@ void scale(unsigned w, unsigned h, size_t pitch, const void *src, void *dst)
 
 		/* Step 2 : apply selected rotation. tmpbuf uses SCREEN_PITCH stride so rotation functions must read with that stride. */
 		switch (rotate_display) {
-
 			case 1: // 90° CW
 				rotate_90cw(SCREEN_WIDTH, SCREEN_HEIGHT, (const uint16_t *)tmpbuf, (uint16_t *)dst);
 				break;
-
 			case 2: // 180°
 				rotate_180(SCREEN_WIDTH, SCREEN_HEIGHT, (const uint16_t *)tmpbuf, (uint16_t *)dst);
 				break;
-
 			case 3: // 270° CW
 				rotate_270cw(SCREEN_WIDTH, SCREEN_HEIGHT, (const uint16_t *)tmpbuf, (uint16_t *)dst);
 				break;
