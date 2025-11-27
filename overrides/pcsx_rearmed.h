@@ -83,17 +83,7 @@ static const struct core_override_option pcsx_rearmed_core_option_overrides[] = 
 	},
 	{
 		.key = "pcsx_rearmed_analog_combo",
-		.desc = "DS Analog Toggle",
-		.info = "Allows the emulated DualShock to be toggled between DIGITAL and ANALOG mode like original hardware. You can select the button combination for this.",
-		.options = {
-			{"disabled", NULL},
-			{"l1+r1+select", "L1+R1+Select"},
-			{"l1+r1+start",  "L1+R1+Start"},
-			{"l1+r1+l3",     "L1+R1+L3"},
-			{"l1+r1+r3",     "L1+R1+R3"},
-			{"l3+r3",        "L3+R3"},
-			{ NULL, NULL }
-		}
+		.blocked = true
 	},
 	{
 		.key = "pcsx_rearmed_exception_emulation",

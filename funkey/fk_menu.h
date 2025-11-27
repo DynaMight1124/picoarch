@@ -84,6 +84,7 @@ typedef enum{
     X(ASPECT_RATIOS_TYPE_SCALED, "SCALED") \
     X(ASPECT_RATIOS_TYPE_STRETCHED, "STRETCHED") \
     X(ASPECT_RATIOS_TYPE_CROPPED, "CROPPED") \
+    X(ASPECT_RATIOS_TYPE_MANUAL, "MANUAL") \
     X(NB_ASPECT_RATIOS_TYPES, "")
 
 ////------ Enumeration of the different aspect ratios ------

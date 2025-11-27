@@ -16,6 +16,10 @@ CFLAGS     += -Wall
 CFLAGS     += -fdata-sections -ffunction-sections -DPICO_HOME_DIR='"/.picoarch/"' -flto
 CFLAGS     += -I./ -I./libretro-common/include/ $(shell $(SYSROOT)/usr/bin/sdl-config --cflags)
 
+# Revision info from repository
+GIT_REVISION ?= $(shell git rev-parse --short HEAD || echo unknown)
+CFLAGS += -DREVISION=\"$(GIT_REVISION)\"
+
 LDFLAGS    = -lc -ldl -lgcc -lm -lSDL -lasound -lpng -lz -Wl,--gc-sections -flto
 
 # Unpolished or slow cores that build

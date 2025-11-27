@@ -3,6 +3,13 @@
 #include "libretro.h"
 #include "scale.h"
 
+typedef enum {
+    PAN_DISPLAY_OFF,
+    PAN_DISPLAY_LEFT,
+    PAN_DISPLAY_RIGHT
+} pan_display_t;
+
+extern pan_display_t pan_display; // PAN_DISPLAY_OFF, PAN_DISPLAY_LEFT, PAN_DISPLAY_RIGHT
 extern int show_fps;
 extern int show_cpu;
 extern int show_hud;
@@ -11,6 +18,7 @@ extern int enable_audio;
 extern int enable_drc;
 extern int use_srm;
 extern int rotate_display; // 0 = normal, 1 = 90° CW, 2 = 180°, 3 = 270° CW
+extern int zoom_level; // 0–100
 extern unsigned audio_buffer_size;
 extern enum scale_size scale_size;
 extern enum scale_filter scale_filter;
