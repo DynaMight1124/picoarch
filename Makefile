@@ -23,9 +23,9 @@ CFLAGS += -DREVISION=\"$(GIT_REVISION)\"
 LDFLAGS    = -lc -ldl -lgcc -lm -lSDL -lasound -lpng -lz -Wl,--gc-sections -flto
 
 # Unpolished or slow cores that build
-# EXTRA_CORES += mame2003_plus prboom scummvm tyrquake
+# EXTRA_CORES += mame2003_plus scummvm
 
-CORES = bluemsx fceumm fmsx gambatte gme gpsp mame2000 mednafen_lynx mednafen_ngp mednafen_pce_fast mednafen_wswan pcsx_rearmed picodrive pokemini quicknes smsplus-gx snes9x2002 snes9x2005 stella2014 $(EXTRA_CORES)
+CORES = bluemsx fceumm fmsx gambatte gme gpsp mame2000 mednafen_lynx mednafen_ngp mednafen_pce_fast mednafen_wswan pcsx_rearmed picodrive pokemini prboom quicknes smsplus-gx snes9x2002 snes9x2005 stella2014 tyrquake vitaquake2 $(EXTRA_CORES)
 
 ifneq ($(platform), trimui)
 CORES := $(CORES) dosbox-pure fake-08 fbalpha2012 snes9x2005_plus snes9x2010
@@ -94,7 +94,7 @@ picodrive_TYPES = bin,gen,smd,md,32x,cue,iso,chd,sms,gg,m3u,68k,sgd
 
 pokemini_TYPES = min
 
-prboom_REPO = https://github.com/libretro/libretro-prboom
+prboom_REPO = https://github.com/DrUm78/libretro-prboom
 prboom_TYPES = wad,iwad,pwad,lmp
 
 quicknes_REPO = https://github.com/libretro/QuickNES_Core
@@ -120,7 +120,11 @@ snes9x2010_TYPES = smc,fig,sfc,gd3,gd7,dx2,bsx,swc,zip
 stella2014_REPO = https://github.com/libretro/stella2014-libretro
 stella2014_TYPES = a26,bin
 
+tyrquake_REPO = https://github.com/DrUm78/tyrquake
 tyrquake_TYPES = pak
+
+vitaquake2_REPO = https://github.com/DrUm78/vitaquake2
+vitaquake2_TYPES = pak
 
 ifeq ($(platform), trimui)
 	SOURCES += plat_trimui.c
