@@ -1,0 +1,39 @@
+diff --git a/src/libretro/libretro.cpp b/src/libretro/libretro.cpp
+index f31c073..cf05557 100644
+--- a/src/libretro/libretro.cpp
++++ b/src/libretro/libretro.cpp
+@@ -925,7 +925,7 @@ static void TransformAutomapInputs(const wl_input_state_t *input)
+ void TransformPlayInputs(const wl_input_state_t *input, int newly_pressed)
+ {
+ 	TicCmd_t &cmd = control[ConsolePlayer];
+-	int runbutton = !!(input->button_mask & (1<<RETRO_DEVICE_ID_JOYPAD_X));
++	int runbutton = !!(input->button_mask & (1<<RETRO_DEVICE_ID_JOYPAD_B));
+ 	int delta = (runbutton == !alwaysrun) ? RUNMOVE : BASEMOVE;
+ 	cmd.controlx = transform_axis(input->rsx, runbutton, AnalogTurnSensitivity);
+ 	cmd.controly = transform_axis(input->lsy, runbutton, AnalogMoveSensitivity);
+@@ -938,20 +938,16 @@ void TransformPlayInputs(const wl_input_state_t *input, int newly_pressed)
+ 		cmd.controlx = -delta;
+ 	if(input->button_mask & (1<<RETRO_DEVICE_ID_JOYPAD_RIGHT))
+ 		cmd.controlx = +delta;
+-	if(input->button_mask & (1<<RETRO_DEVICE_ID_JOYPAD_L))
+-		cmd.controlstrafe = -delta;
+-	if(input->button_mask & (1<<RETRO_DEVICE_ID_JOYPAD_R))
+-		cmd.controlstrafe = +delta;
+ 
+-	if(input->button_mask & (1<<RETRO_DEVICE_ID_JOYPAD_A))
++	if(input->button_mask & (1<<RETRO_DEVICE_ID_JOYPAD_X))
+ 		cmd.buttonstate[bt_attack] = 1;
+-	if(newly_pressed & (1<<RETRO_DEVICE_ID_JOYPAD_B))
++	if(newly_pressed & (1<<RETRO_DEVICE_ID_JOYPAD_A))
+ 		cmd.buttonstate[bt_use] = 1;
+ 	if(input->button_mask & (1<<RETRO_DEVICE_ID_JOYPAD_Y))
+-		cmd.buttonstate[bt_showstatusbar] = 1;
+-	if(newly_pressed & (1<<RETRO_DEVICE_ID_JOYPAD_L2))
++		cmd.buttonstate[bt_strafe] = 1;
++	if(newly_pressed & (1<<RETRO_DEVICE_ID_JOYPAD_L))
+ 		cmd.buttonstate[bt_prevweapon] = 1;
+-	if(newly_pressed & (1<<RETRO_DEVICE_ID_JOYPAD_R2))
++	if(newly_pressed & (1<<RETRO_DEVICE_ID_JOYPAD_R))
+ 		cmd.buttonstate[bt_nextweapon] = 1;
+ 
+ 	/*

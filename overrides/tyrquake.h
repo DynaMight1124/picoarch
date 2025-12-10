@@ -41,8 +41,6 @@ me_bind_action tyrquake_ctrl_actions[] =
 	{ "NEXT WPN ",  1 << RETRO_DEVICE_ID_JOYPAD_R },
 	{ "LOOK UP  ",  1 << RETRO_DEVICE_ID_JOYPAD_L2 },
 	{ "LOOK DOWN",  1 << RETRO_DEVICE_ID_JOYPAD_R2 },
-	{ "MOVE DOWN",  1 << RETRO_DEVICE_ID_JOYPAD_L3 },
-	{ "SWIM UP  ",  1 << RETRO_DEVICE_ID_JOYPAD_R3 },
 	{ NULL,       0 }
 };
 

@@ -2,6 +2,7 @@
 #include "overrides/arduous.h"
 #include "overrides/bluemsx.h"
 #include "overrides/dosbox-pure.h"
+#include "overrides/ecwolf.h"
 #include "overrides/fake-08.h"
 #include "overrides/fbalpha2012.h"
 #include "overrides/fbneo.h"
@@ -35,6 +36,7 @@ static const struct core_override overrides[] = {
 	arduous_overrides,
 	bluemsx_overrides,
 	dosbox_pure_overrides,
+	ecwolf_overrides,
 	fake08_overrides,
 	fbalpha2012_overrides,
 	fbneo_overrides,

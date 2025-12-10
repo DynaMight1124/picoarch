@@ -41,7 +41,6 @@ me_bind_action prboom_ctrl_actions[] =
 	{ "MAP      ",  1 << RETRO_DEVICE_ID_JOYPAD_SELECT },
 	{ "PREV WPN ",  1 << RETRO_DEVICE_ID_JOYPAD_L },
 	{ "NEXT WPN ",  1 << RETRO_DEVICE_ID_JOYPAD_R },
-	{ "RUN      ",  1 << RETRO_DEVICE_ID_JOYPAD_L3 },
 	{ NULL,       0 }
 };
 #else
