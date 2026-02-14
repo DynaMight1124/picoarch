@@ -12,7 +12,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # 2. Download and extract the FunKey-S toolchain release
-ARG TOOLCHAIN_URL="https://github.com/DrUm78/FunKey-OS/releases/download/FunKey-OS-DrUm78/FunKey-sdk-2.3.0.tar.gz"
+ARG TOOLCHAIN_URL="https://github.com/FunKey-Project/FunKey-OS/releases/download/FunKey-OS-2.3.0/FunKey-sdk-2.3.0.tar.gz"
 RUN mkdir -p /opt && \
     wget -qO /opt/toolchain.tar.gz ${TOOLCHAIN_URL} && \
     echo "Toolchain downloaded, extracting..." && \
