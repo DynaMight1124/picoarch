@@ -29,7 +29,7 @@ jobs:
       - name: Download and Install FunKey-S SDK
         run: |
           echo "Downloading FunKey-S SDK..."
-          wget -qO /tmp/toolchain.tar.gz https://github.com/DrUm78/FunKey-OS/releases/download/FunKey-OS-DrUm78/FunKey-sdk-2.3.0.tar.gz
+          wget -qO /tmp/toolchain.tar.gz https://github.com/FunKey-Project/FunKey-OS/releases/download/FunKey-OS-2.3.0/FunKey-sdk-2.3.0.tar.gz
           echo "Extracting SDK to /opt/FunKey-sdk-2.3.0..."
           sudo mkdir -p /opt/FunKey-sdk-2.3.0
           sudo tar zxvf /tmp/toolchain.tar.gz -C /opt
