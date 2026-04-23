@@ -16,6 +16,7 @@
 #include "plat.h"
 #include "util.h"
 #include "video.h"
+#include <sys/time.h>
 
 struct core_cbs current_core;
 char core_path[MAX_PATH];
@@ -42,6 +43,12 @@ static int core_load_game_info(struct content *content, struct retro_game_info *
 	current_core.retro_get_system_info(&info);
 
 	return content_load_game_info(content, game_info, info.need_fullpath);
+}
+
+static retro_perf_tick_t retro_perf_get_time_usec(void) {
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	return (retro_perf_tick_t)((uint64_t)tv.tv_sec * 1000000 + tv.tv_usec);
 }
 
 void config_file_name(char *buf, size_t len, config_type config_type)
@@ -581,6 +588,15 @@ static bool pa_environment(unsigned cmd, void *data) {
 				audio_buffer_size_override = frames;
 			else
 				PA_WARN("Audio buffer change out of range (%d), ignored\n", frames);
+		}
+		break;
+	}
+	case RETRO_ENVIRONMENT_GET_PERF_INTERFACE: { /* 28 */
+		struct retro_perf_callback *cb = (struct retro_perf_callback *)data;
+		if (cb) {
+			cb->get_time_usec = (retro_perf_get_time_usec_t)retro_perf_get_time_usec;
+			PA_INFO("PERF INTERFACE : Callback get_time_usec saved\n");
+			return true;
 		}
 		break;
 	}

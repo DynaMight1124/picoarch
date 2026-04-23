@@ -60,12 +60,13 @@ me_bind_action mame2000_ctrl_actions[] =
 
 me_bind_action mame2000_emu_actions[] =
 {
-	{ "FPS/CPU%     ", 1 << EACTION_TOGGLE_HUD },
+	{ "Toggle HUD   ", 1 << EACTION_TOGGLE_HUD },
 	{ "Fast Forward ", 1 << EACTION_TOGGLE_FF },
 	{ "Screenshot   ", 1 << EACTION_SCREENSHOT },
-	{ "Panning Left ", 1 << EACTION_PAN_DISPLAY_LEFT },
-	{ "Panning Right", 1 << EACTION_PAN_DISPLAY_RIGHT },
-	{ "Panning OFF  ", 1 << EACTION_PAN_DISPLAY_OFF },
+#ifdef FUNKEY_S
+	{ "Pan Left     ", 1 << EACTION_PAN_DISPLAY_LEFT },
+	{ "Pan Right    ", 1 << EACTION_PAN_DISPLAY_RIGHT },
+#endif
 	{ NULL,            0 }
 };
 

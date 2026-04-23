@@ -23,7 +23,12 @@ enum scale_filter scale_filter;
 
 struct core_options core_options;
 
+#ifdef FUNKEY_S
 #define MAX_DESC_LEN 20
+#else
+#define MAX_DESC_LEN 30
+#endif
+
 #define MAX_LINE_LEN SCREEN_WIDTH / 6
 #define MAX_LINES 4
 

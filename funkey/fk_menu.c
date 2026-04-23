@@ -246,19 +246,11 @@ static void update_aspect_ratio(void)
 		break;
 	case ASPECT_RATIOS_TYPE_CROPPED:
 		scale_size = SCALE_SIZE_CROPPED;
-		if (video_width <= 240) {
-			scale_filter = SCALE_FILTER_SMOOTH;
-		} else {
-			scale_filter = SCALE_FILTER_NEAREST;
-		}
+		scale_filter = SCALE_FILTER_SMOOTH;
 		break;
 	case ASPECT_RATIOS_TYPE_MANUAL:
 		scale_size = SCALE_SIZE_MANUAL;
-		if (video_width <= 240) {
-			scale_filter = SCALE_FILTER_SMOOTH;
-		} else {
-			scale_filter = SCALE_FILTER_NEAREST;
-		}
+		scale_filter = SCALE_FILTER_SMOOTH;
 		break;
 	}
 	scale_update_scaler();

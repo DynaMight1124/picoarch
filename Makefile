@@ -25,7 +25,7 @@ LDFLAGS    = -lc -ldl -lgcc -lm -lSDL -lasound -lpng -lz -Wl,--gc-sections -flto
 # Unpolished or slow cores that build
 # EXTRA_CORES += mame2003_plus scummvm
 
-CORES = bluemsx ecwolf fceumm fmsx gambatte gme gpsp mame2000 mednafen_lynx mednafen_ngp mednafen_pce_fast mednafen_wswan pcsx_rearmed picodrive pokemini prboom quicknes smsplus-gx snes9x2002 snes9x2005 stella2014 tyrquake vitaquake2 $(EXTRA_CORES)
+CORES = bluemsx chimerasnes ecwolf fceumm fmsx gambatte gme gpsp mame2000 mednafen_lynx mednafen_ngp mednafen_pce_fast mednafen_wswan pcsx_rearmed picodrive pokemini prboom quicknes smsplus-gx snes9x2002 snes9x2005 stella2014 tyrquake vitaquake2 $(EXTRA_CORES)
 
 ifneq ($(platform), trimui)
 CORES := $(CORES) dosbox-pure fake-08 fbalpha2012 snes9x2005_plus snes9x2010
@@ -35,6 +35,9 @@ endif
 
 bluemsx_REPO = https://github.com/libretro/blueMSX-libretro
 bluemsx_TYPES = rom,ri,mx1,mx2,dsk,col,sg,sc,cas,m3u
+
+chimerasnes_REPO = https://github.com/jamsilva/chimerasnes
+chimerasnes_TYPES = smc,fig,sfc,gd3,gd7,dx2,bsx,bs,swc,st
 
 dosbox-pure_REPO = https://github.com/schellingb/dosbox-pure
 dosbox-pure_CORE = dosbox_pure_libretro.so
