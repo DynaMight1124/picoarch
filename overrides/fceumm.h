@@ -16,10 +16,12 @@ static const struct core_override_option fceumm_core_option_overrides[] = {
 	{
 		.key = "fceumm_overscan_v_top",
 		.desc = "Crop Overscan Top",
+		.default_value = "0"
 	},
 	{
 		.key = "fceumm_overscan_v_bottom",
 		.desc = "Crop Overscan Bot.",
+		.default_value = "0"
 	},
 	{
 		.key = "fceumm_up_down_allowed",
@@ -58,6 +60,18 @@ static const struct core_override_option fceumm_core_option_overrides[] = {
 		.desc = "Show Snd Options",
 	},
 	{
+		.key = "fceumm_swapduty",
+		.desc = "Swap Audio Duty",
+	},
+	{
+		.key = "fceumm_overclocking",
+		.info = "Enables or disables overclocking to reduce slowdowns in games. Postrender is more compatible, Vblank is more effective for games like Contra Force.",
+	},
+	{
+		.key = "fceumm_sndvolume",
+		.default_value = "10",
+	},
+	{
 		.key = "fceumm_game_genie",
 		.blocked = true
 	},
@@ -87,6 +101,10 @@ static const struct core_override_option fceumm_core_option_overrides[] = {
 	},
 	{
 		.key = "fceumm_mouse_sensitivity",
+		.blocked = true
+	},
+	{
+		.key = "fceumm_aspect",
 		.blocked = true
 	},
 	{ NULL }

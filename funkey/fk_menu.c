@@ -34,6 +34,9 @@
 #include "scale.h"
 #include "plat.h"
 
+extern int video_width;
+extern int video_height;
+
 /// -------------- DEFINES --------------
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
@@ -208,18 +211,21 @@ static void draw_progress_bar(SDL_Surface * surface, uint16_t x, uint16_t y, uin
 static void read_aspect_ratio(void)
 {
 	switch (scale_size) {
-	case SCALE_SIZE_FULL:
+	case SCALE_SIZE_STRETCHED:
 		menu_aspect_ratio = ASPECT_RATIOS_TYPE_STRETCHED;
 		break;
-	case SCALE_SIZE_ASPECT:
+	case SCALE_SIZE_SCALED:
 		menu_aspect_ratio = ASPECT_RATIOS_TYPE_SCALED;
 		break;
-	case SCALE_SIZE_CROP:
+	case SCALE_SIZE_NATIVE:
+		menu_aspect_ratio = ASPECT_RATIOS_TYPE_NATIVE;
+		break;
+	case SCALE_SIZE_CROPPED:
 		menu_aspect_ratio = ASPECT_RATIOS_TYPE_CROPPED;
 		break;
-	/*case SCALE_SIZE_NONE:
-		menu_aspect_ratio = ASPECT_RATIOS_TYPE_NONE;
-		break;*/
+	case SCALE_SIZE_MANUAL:
+		menu_aspect_ratio = ASPECT_RATIOS_TYPE_MANUAL;
+		break;
 	}
 }
 
@@ -227,21 +233,25 @@ static void update_aspect_ratio(void)
 {
 	switch (menu_aspect_ratio) {
 	case ASPECT_RATIOS_TYPE_STRETCHED:
-		scale_size = SCALE_SIZE_FULL;
+		scale_size = SCALE_SIZE_STRETCHED;
 		scale_filter = SCALE_FILTER_SMOOTH;
 		break;
 	case ASPECT_RATIOS_TYPE_SCALED:
-		scale_size = SCALE_SIZE_ASPECT;
+		scale_size = SCALE_SIZE_SCALED;
 		scale_filter = SCALE_FILTER_SMOOTH;
+		break;
+	case ASPECT_RATIOS_TYPE_NATIVE:
+		scale_size = SCALE_SIZE_NATIVE;
+		scale_filter = SCALE_FILTER_NEAREST;
 		break;
 	case ASPECT_RATIOS_TYPE_CROPPED:
-		scale_size = SCALE_SIZE_CROP;
+		scale_size = SCALE_SIZE_CROPPED;
 		scale_filter = SCALE_FILTER_SMOOTH;
 		break;
-	/*case ASPECT_RATIOS_TYPE_NONE:
-		scale_size = SCALE_SIZE_NONE;
-		scale_filter = SCALE_FILTER_NEAREST;
-		break;*/
+	case ASPECT_RATIOS_TYPE_MANUAL:
+		scale_size = SCALE_SIZE_MANUAL;
+		scale_filter = SCALE_FILTER_SMOOTH;
+		break;
 	}
 	scale_update_scaler();
 }
@@ -1136,7 +1146,6 @@ int FK_RunMenu(SDL_Surface *screen)
 							MENU_DEBUG_PRINTF("Aspect Ratio DOWN\n");
 							menu_aspect_ratio = (!menu_aspect_ratio)?(NB_ASPECT_RATIOS_TYPES-1):(menu_aspect_ratio-1);
 							update_aspect_ratio();
-
 							/// ------ Refresh screen ------
 							screen_refresh = 1;
 						} else
@@ -1493,12 +1502,21 @@ void FK_NextAspectRatio(void)
 	FILE *fp;
 
 	read_aspect_ratio();
-	menu_aspect_ratio = (menu_aspect_ratio+1)%NB_ASPECT_RATIOS_TYPES;
+	menu_aspect_ratio = (menu_aspect_ratio + 1) % NB_ASPECT_RATIOS_TYPES;
 	update_aspect_ratio();
 	scale_update_scaler();
 	plat_video_menu_leave();
-	snprintf(shell_cmd, 100, "%s %d \"    DISPLAY MODE: %s\"",
-    SHELL_CMD_NOTIF_SET, NOTIF_SECONDS_DISP, aspect_ratio_name[menu_aspect_ratio]);
+
+	const char *notif_name = aspect_ratio_name[menu_aspect_ratio];
+
+	if (menu_aspect_ratio == ASPECT_RATIOS_TYPE_MANUAL){
+		snprintf(shell_cmd, 100, "%s %d \"    DISPLAY MODE: MANUAL %d%%%%\"",
+		SHELL_CMD_NOTIF_SET, NOTIF_SECONDS_DISP, zoom_level);
+	} else {
+		snprintf(shell_cmd, 100, "%s %d \"    DISPLAY MODE: %s\"",
+		SHELL_CMD_NOTIF_SET, NOTIF_SECONDS_DISP, notif_name);
+	}
+
 	fp = popen(shell_cmd, "r");
 	if (fp == NULL) {
 		printf("Failed to run command %s\n", shell_cmd);

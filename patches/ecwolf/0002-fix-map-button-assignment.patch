@@ -1,0 +1,13 @@
+diff --git a/src/libretro/libretro.cpp b/src/libretro/libretro.cpp
+index f31c073..1773278 100644
+--- a/src/libretro/libretro.cpp
++++ b/src/libretro/libretro.cpp
+@@ -1030,7 +1030,7 @@ static void TransformInputs(wl_input_state_t *input)
+ 		break;
+ 	}
+ 
+-	if((newly_pressed & (1<<RETRO_DEVICE_ID_JOYPAD_SELECT))) {
++	if(map && (newly_pressed & (1<<RETRO_DEVICE_ID_JOYPAD_SELECT))) {
+ 		AM_Toggle();
+ 		return;
+ 	}

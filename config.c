@@ -30,6 +30,9 @@ static const struct {
 	CE_NUM(audio_buffer_size),
 	CE_NUM(scale_size),
 	CE_NUM(scale_filter),
+	CE_NUM(rotate_display),
+	CE_NUM(zoom_level),
+	CE_NUM(pan_display),
 };
 
 void config_write(FILE *f)
@@ -108,16 +111,6 @@ void config_read(const char* cfg)
 		}
 
 		parse_num_val(config_data[i].val, tmp);
-
-		/* Backward compatibility fix:
-		   scale_size == 3 → replace by 2 (NATIVE) */
-		if (!strcmp(config_data[i].name, "scale_size")) {
-			uint32_t *val = (uint32_t *)config_data[i].val;
-			if (*val == 3) {
-				PA_INFO("config: scale_size=3 (obsolete) -> remapped to 2\n");
-				*val = 2;
-			}
-		}
 	}
 
 	for (size_t i = 0; i < core_options.len; i++) {

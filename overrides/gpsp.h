@@ -19,6 +19,23 @@ static const struct core_override_option gpsp_core_option_overrides[] = {
 		}
 	},
 	{
+		.key = "gpsp_sprlim",
+		.info = "Removes the sprite-per-scanline hardware limit. Some games rely on this limit for proper rendering (ie. hiding some sprites).",
+	},
+	{
+		.key = "gpsp_rtc",
+		.info = "Sets RTC support. Autodetect uses a database for most commercial titles. You might need to force RTC for homebrew or ROM hacks.",
+		.default_value = "enabled"
+	},
+	{
+		.key = "gpsp_serial",
+		.desc = "Link Cable",
+	},
+	{
+		.key = "gpsp_rumble",
+		.info = "Sets Rumble support. Autodetect uses a database for most commercial titles. You might want to force Rumble for homebrew or ROM hacks."
+	},
+	{
 		.key = "gpsp_frameskip",
 		.info = "Skip frames to avoid audio crackling. Improves performance at the expense of visual smoothness.",
 		.default_value = "auto",

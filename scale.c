@@ -6,6 +6,10 @@
 #include "options.h"
 #include "scale.h"
 
+int video_width  = 0;
+int video_height = 0;
+int need_full_clear = 0;
+
 typedef void (*scaler_t)(unsigned w, unsigned h, size_t pitch, const void *src, void *dst);
 
 struct dimensions {
@@ -92,11 +96,6 @@ static inline int gcd(int a, int b) {
 
 static void scale_null(unsigned w, unsigned h, size_t pitch, const void *src, void *dst) {}
 
-static void scale_memcpy(unsigned w, unsigned h, size_t pitch, const void *src, void *dst) {
-	dst += dst_offs;
-	memcpy(dst, src, h * pitch);
-}
-
 static void scale_1x(unsigned w, unsigned h, size_t pitch, const void *src, void *dst) {
 	dst += dst_offs;
 
@@ -153,6 +152,13 @@ static void scale_nearest(unsigned w, unsigned h, size_t pitch, const void *src,
 		} else {
 			copy = true;
 		}
+	}
+
+	// --- Fix: ensure last destination line (truncated) is not visible ---
+	{
+		uint8_t *base = (uint8_t *)dst - SCREEN_PITCH; // go back one line
+		uint8_t *last = base + SCREEN_PITCH;           // point to final line
+		memset(last, 0, SCREEN_PITCH);
 	}
 }
 
@@ -269,6 +275,13 @@ static void scale_blend(unsigned w, unsigned h, size_t pitch, const void *src, v
 		dy -= rat_dst_h;
 		src += pitch;
 	}
+
+	// --- Fix: ensure last destination line (truncated) is not visible ---
+	{
+		uint8_t *base = (uint8_t *)dst - SCREEN_PITCH; // go back one line
+		uint8_t *last = base + SCREEN_PITCH;           // point to final line
+		memset(last, 0, SCREEN_PITCH);
+	}
 }
 
 #define DARKER(c1, c2) (c1 > c2 ? c2 : c1)
@@ -359,9 +372,9 @@ static void scale_sharp_240x160_320xXXX(unsigned _w, unsigned _h, size_t _pitch,
 			Eh -= dst_h;
 			dh++;
 			vf = 0;
-		}
-		else
+		} else {
 			vf = 1;
+		}
 	}
 }
 
@@ -409,10 +422,236 @@ static void scale_sharp_256xXXX_320xXXX(unsigned w, unsigned h, size_t pitch, co
 			Eh -= dst_h;
 			dh++;
 			vf = 0;
-		}
-		else
+		} else {
 			vf = 1;
+		}
 	}
+}
+
+/* rotate 90° CW */
+static void rotate_90cw(
+	unsigned w, unsigned h, const uint16_t *src, uint16_t *dst)
+{
+	const size_t dst_pitch = h;
+	for (unsigned y = 0; y < h; y++) {
+		for (unsigned x = 0; x < w; x++) {
+			dst[x * dst_pitch + (h - 1 - y)] = src[y * w + x];
+		}
+	}
+}
+
+/* rotate 180° */
+static void rotate_180(
+	unsigned w, unsigned h, const uint16_t *src, uint16_t *dst)
+{
+	const size_t total = w * h;
+	for (size_t i = 0; i < total; i++) {
+		dst[total - 1 - i] = src[i];
+	}
+}
+
+/* rotate 270° CW */
+static void rotate_270cw(
+	unsigned w, unsigned h, const uint16_t *src, uint16_t *dst)
+{
+	const size_t dst_pitch = h;
+	for (unsigned y = 0; y < h; y++) {
+		for (unsigned x = 0; x < w; x++) {
+			dst[(w - 1 - x) * dst_pitch + y] = src[y * w + x];
+		}
+	}
+}
+
+static void scale_compute_zoom(unsigned w, unsigned h, size_t pitch, double zoom_level)
+{
+	/* Debugging: set zoom_debug = 1 to print helpful values via PA_INFO. */
+	double aspect = (double)w / (double)h;
+	double zoom = zoom_level / 100;
+	static int zoom_debug = 0; /* set to 1 for runtime debugging prints */
+	/* ---------------------------------------------------------
+	 * Forced aspect-ratio overrides for known odd systems
+	 * --------------------------------------------------------- */
+	if (w == 384 && h == 224) {
+		aspect = 10.0f / 7.0f; /* CPS1/2/3 */
+	} else if (strstr(core_name, "pcsx")) {
+		aspect = 4.0f / 3.0f;  /* PS1 */
+	} else if (strstr(core_name, "snes")) {
+		aspect = 8.0f / 7.0f;  /* SNES */
+	}
+	/* ---------------------------------------------------------
+	 * 1) TRUE BASE (zoom 0%) - choose native vs scaled base
+	 * --------------------------------------------------------- */
+	unsigned base_w = w;
+	unsigned base_h = h;
+	if (w <= 240) {
+		/* native 1:1 base */
+		base_w = w;
+		base_h = h;
+	} else {
+		/* scaled base (fit to SCREEN_WIDTH keeping aspect) */
+		base_w = SCREEN_WIDTH;
+		base_h = (int)(SCREEN_WIDTH / aspect + 0.5);
+		if (base_h > SCREEN_HEIGHT) {
+			base_h = SCREEN_HEIGHT;
+			base_w = (int)(SCREEN_HEIGHT * aspect + 0.5);
+		}
+	}
+	/* ---------------------------------------------------------
+	 * 2) FULL CROPPED (zoom 100%) - virtual full-canvas size
+	 * --------------------------------------------------------- */
+	unsigned full_crop_h = SCREEN_HEIGHT;
+	unsigned full_crop_w = (unsigned)(full_crop_h * aspect + 0.5);
+	/* ---------------------------------------------------------
+	 * 3) VIRTUAL OUTPUT (interpolate between base and full)
+	 * --------------------------------------------------------- */
+	dst_w = base_w + (unsigned)((double)(full_crop_w - base_w) * zoom);
+	dst_h = base_h + (unsigned)((double)(full_crop_h - base_h) * zoom);
+	if (dst_w < 1) dst_w = 1;
+	if (dst_h < 1) dst_h = 1;
+	/* Compute base position (centered by default) */
+	int base_x = (SCREEN_WIDTH - (int)base_w) / 2;
+	int base_y = (SCREEN_HEIGHT - (int)base_h) / 2;
+	/* final target when zoom == 1:
+	 * - if virtual canvas wider than screen -> we will use crop (dst_x==0)
+	 * - otherwise center the virtual canvas inside the screen
+	 */
+	int final_dst_x = (dst_w > SCREEN_WIDTH) ? 0 : (SCREEN_WIDTH - (int)dst_w) / 2;
+	int final_dst_y = (SCREEN_HEIGHT - (int)dst_h) / 2;
+	if (final_dst_y < 0) final_dst_y = 0;
+	/* Interpolate *centers* for symmetry and to avoid integer bias */
+	double base_cx = base_x + ((double)base_w / 2.0);
+	double base_cy = base_y + ((double)base_h / 2.0);
+	double final_cx = final_dst_x + ((double)dst_w / 2.0);
+	double final_cy = final_dst_y + ((double)dst_h / 2.0);
+	double cx = base_cx + (final_cx - base_cx) * zoom;
+	double cy = base_cy + (final_cy - base_cy) * zoom;
+	/* ideal dst (if we could move framebuffer) */
+	int dst_x_ideal = (int)(cx - ((double)dst_w / 2.0) + 0.5);
+	int dst_y_ideal = (int)(cy - ((double)dst_h / 2.0) + 0.5);
+	/* By default we will write into framebuffer at centered position.
+	 * But if dst_w > SCREEN_WIDTH we must use crop path (dst_x==0)
+	 * and shift source (src_offs) so the visible window is centered.
+	 */
+	if (zoom_debug) {
+		PA_INFO("[ZOOMDBG] w=%u h=%u aspect=%.6f zoom=%.3f base=%ux%u full=%ux%u dst=%ux%u\n",
+				w, h, aspect, zoom, base_w, base_h, full_crop_w, full_crop_h, dst_w, dst_h);
+		PA_INFO("[ZOOMDBG] base_cx=%.2f final_cx=%.2f cx=%.2f dst_x_ideal=%d dst_y_ideal=%d\n",
+				base_cx, final_cx, cx, dst_x_ideal, dst_y_ideal);
+	}
+	/* Compute visible source width (how many source pixels correspond to visible SCREEN_WIDTH
+	 * when the virtual canvas is full_crop_w). This is used to bound the source offset.
+	 */
+	unsigned visible_w = SCREEN_WIDTH;
+	double visible_src_w = (full_crop_w > 0)
+		? (double)w * ((double)visible_w / (double)full_crop_w)
+		: (double)w;
+	/* Map the desired virtual viewport into source coordinates when cropping. */
+	if (dst_w > SCREEN_WIDTH) {
+		/* Virtual canvas is larger than the screen -> we must crop.
+		 *
+		 * We want the visible window of width SCREEN_WIDTH to be strictly centered
+		 * on the virtual canvas, regardless of dst_x_ideal.
+		 * So, the visible window starts at:
+		 *
+		 *   Vx = (dst_w - SCREEN_WIDTH) / 2
+		 *
+		 * This ensures the visible part is always centered.
+		 */
+		double Vx = ((double)dst_w - (double)SCREEN_WIDTH) / 2.0;
+		double src_pixels_per_virtual = (double)w / (double)dst_w;
+		double src_off_pixels = Vx * src_pixels_per_virtual;
+		/* Compute byte offset and clamp */
+		int new_src_offs = (int)(src_off_pixels * (double)SCREEN_BPP + 0.5);
+		// Apply pan display offset
+		if (pan_display == PAN_DISPLAY_LEFT) {
+			new_src_offs = 0; // Show leftmost part
+		} else if (pan_display == PAN_DISPLAY_RIGHT) {
+			// Calculate the offset to show the rightmost part
+			new_src_offs = (int)((dst_w - SCREEN_WIDTH) * src_pixels_per_virtual * SCREEN_BPP);
+		}
+		/* clamp to valid source range (in bytes) */
+		int max_src_off_bytes = (int)((double)w - visible_src_w) * SCREEN_BPP;
+		if (new_src_offs < 0) new_src_offs = 0;
+		if (new_src_offs > max_src_off_bytes) new_src_offs = max_src_off_bytes;
+		/* Align to pixel boundary */
+		if (new_src_offs % SCREEN_BPP) {
+			new_src_offs -= (new_src_offs % SCREEN_BPP);
+			if (new_src_offs < 0) new_src_offs = 0;
+		}
+		src_offs = new_src_offs;
+		/* destination must be left-aligned for crop path */
+		dst_offs = 0; /* dst_x will be added below */
+		dst_x_ideal = 0; /* ensure we don't try to write at dst_x */
+		if (zoom_debug) {
+			PA_INFO("[ZOOMDBG] CROP path: Vx=%.2f src_pixels_per_virtual=%.6f src_off_pixels=%.2f src_offs=%d max_src=%d\n",
+					Vx, src_pixels_per_virtual, src_off_pixels, src_offs, max_src_off_bytes);
+		}
+	}
+	/* Compute final dst_x/dst_y to write into framebuffer.
+	 * If we are in crop path dst_x_ideal is now clamped but not forced to 0.
+	 */
+	int dst_x = dst_x_ideal;
+	int dst_y = dst_y_ideal;
+	/* Safety clamp final dst coords to visible framebuffer */
+	if (dst_x < 0) dst_x = 0;
+	if (dst_y < 0) dst_y = 0;
+	if ((size_t)(dst_x + dst_w) > (size_t)SCREEN_WIDTH) {
+		/* clamp to avoid writing beyond framebuffer when not in crop path */
+		if ((int)dst_w <= SCREEN_WIDTH)
+			dst_x = (SCREEN_WIDTH - (int)dst_w) / 2;
+		else
+			dst_x = 0;
+	}
+	/* Final dst_offs in bytes */
+	dst_offs = dst_y * SCREEN_PITCH + dst_x * SCREEN_BPP;
+	if (zoom_debug) {
+		PA_INFO("[ZOOMDBG] final: dst_x=%d dst_y=%d dst_offs=%d dst_w=%u dst_h=%u src_offs=%d\n",
+				dst_x, dst_y, dst_offs, dst_w, dst_h, src_offs);
+	}
+	/* Prevent fractional alignment for blend modes (safety) */
+	if (src_offs % SCREEN_BPP) {
+		src_offs -= (src_offs % SCREEN_BPP);
+		if (src_offs < 0) src_offs = 0;
+	}
+	w_offs = 0;
+	/* ---------------------------------------------------------
+	 * SCALER SELECTION (same logic as before, but using new dst_w/dst_h)
+	 * --------------------------------------------------------- */
+	if (scale_filter == SCALE_FILTER_NEAREST) {
+		scaler = scale_nearest;
+	} else if (scale_filter == SCALE_FILTER_SHARP || scale_filter == SCALE_FILTER_SMOOTH) {
+		int gcd_w = gcd((int)w, (int)dst_w);
+		int div_w = dst_w / gcd_w;
+		blend_args.w_ratio_in  = w / gcd_w;
+		blend_args.w_ratio_out = dst_w / gcd_w;
+		blend_args.w_bp[0]     = (div_w + 2) / 5;
+		blend_args.w_bp[1]     = div_w >> 1;
+		int gcd_h = gcd((int)h, (int)dst_h);
+		int div_h = dst_h / gcd_h;
+		blend_args.h_ratio_in  = h / gcd_h;
+		blend_args.h_ratio_out = dst_h / gcd_h;
+		blend_args.h_bp[0]     = (div_h + 2) / 5;
+		blend_args.h_bp[1]     = div_h >> 1;
+		if (blend_args.blend_line)
+			free(blend_args.blend_line);
+		size_t blend_w = (size_t)((w > (int)dst_w) ? w : dst_w);
+		blend_args.blend_line = calloc(blend_w, sizeof(uint16_t));
+		if (!blend_args.blend_line) {
+			scaler = scale_nearest;
+		} else {
+			scaler = scale_blend;
+		}
+	} else {
+		scaler = scale_1x;
+	}
+	/* If virtual canvas is larger than visible window, switch to crop path */
+	if (dst_w > SCREEN_WIDTH) {
+		crop_scaler = scaler;
+		scaler = scale_crop;
+		PA_INFO("[MANUAL] using crop path: virtual dst_w=%u visible=%u src_offs=%d\n",
+				dst_w, SCREEN_WIDTH, src_offs);
+	}
+	need_full_clear = 1;
 }
 
 static void scale_select_scaler(unsigned w, unsigned h, size_t pitch) {
@@ -425,17 +664,9 @@ static void scale_select_scaler(unsigned w, unsigned h, size_t pitch) {
 
 	double real_ratio = (double)w / (double)h;
 
-	/* Scaled mode: set correct aspect ratio for resolutions up to 320x224 */
-	if (real_ratio <= 10.0f / 7.0f) {
-		current_aspect_ratio = real_ratio;
-	} else {
-		/* 4:3 aspect ratio is forced for exotic resolutions (384x224 for CPS systems, 640x240 for PS1...) */
-		current_aspect_ratio = aspect_ratio > 0 ? aspect_ratio : real_ratio;
-	}
-
-	/* mame2000 sets resolutions / aspect ratio without notifying
+	/* MAME 2000 sets resolutions / aspect ratio without notifying
 	 * of changes, new should always override old */
-	if (!strcmp(core_name, "mame2000")) {
+	if (strstr(core_name, "mame2000")) {
 		current_aspect_ratio = ((double)w / (double)h);
 	}
 
@@ -446,25 +677,12 @@ static void scale_select_scaler(unsigned w, unsigned h, size_t pitch) {
 		blend_args.blend_line = NULL;
 	}
 
-	if (scale_size == SCALE_SIZE_CROP) {
+	if (scale_size == SCALE_SIZE_NATIVE) {
 		int dst_x, dst_y;
 		src_offs = 0;
+		int initial_w = w; /* Keep the initial value of w */
 
-		if (w <= 320) {
-			dst_x = ((SCREEN_WIDTH - (short)w) / 2);
-		} else {
-			/* Crop to 320px maximum. If larger, scale down after crop. */
-			int src_w;
-			if (strstr(core_name, "snes9x")) {
-				/* For SNES, keep aspect ratio same for hi-res and normal */
-				src_w = SCREEN_WIDTH * 2;
-			} else {
-				src_w = w * ((double)SCREEN_WIDTH / (double)320);
-			}
-
-			dst_x = ((src_w - (short)w) / 2);
-		}
-
+		dst_x = ((SCREEN_WIDTH - (short)w) / 2);
 		dst_y = ((SCREEN_HEIGHT - (short)h) / 2);
 		dst_w = w;
 		dst_h = h;
@@ -482,38 +700,55 @@ static void scale_select_scaler(unsigned w, unsigned h, size_t pitch) {
 			dst_w = SCREEN_WIDTH;
 		}
 
+		// Apply pan display offset for NATIVE mode
+		if (initial_w > SCREEN_WIDTH) {
+			if (pan_display == PAN_DISPLAY_LEFT) {
+				src_offs = 0; // Show leftmost part
+			} else if (pan_display == PAN_DISPLAY_RIGHT) {
+				src_offs = (initial_w - SCREEN_WIDTH) * SCREEN_BPP; // Show rightmost part
+			}
+		}
+
 		dst_offs = dst_y * SCREEN_PITCH + dst_x * SCREEN_BPP;
-	} else if (scale_size == SCALE_SIZE_FULL) {
+
+	} else if (scale_size == SCALE_SIZE_STRETCHED) {
 		dst_w = SCREEN_WIDTH;
 		dst_h = SCREEN_HEIGHT;
 		dst_offs = 0;
-	} else if (scale_size == SCALE_SIZE_ASPECT/* ||
-	           (scale_size == SCALE_SIZE_NONE && (w > SCREEN_WIDTH || h > SCREEN_HEIGHT))*/) {
+
+	} else if (scale_size == SCALE_SIZE_SCALED) {
+		/* Force aspect ratio for exotic resolutions */
+		/* 384x224 for CPS1/2/3 systems, 640x240 for */
+		/* PS1, SNES hi-res... */
+		if (w == 384 && h == 224) {
+			current_aspect_ratio = 10.0f / 7.0f; /* CPS1/2/3 */
+		} else if (strstr(core_name, "pcsx")) {
+			current_aspect_ratio = 4.0f / 3.0f;  /* PS1 */
+		} else if (strstr(core_name, "snes")) {
+			current_aspect_ratio = 8.0f / 7.0f;  /* SNES */
+		} else {
+			current_aspect_ratio = real_ratio;
+		}
+
 		dst_w = SCREEN_WIDTH;
 		dst_h = SCREEN_WIDTH / current_aspect_ratio + 0.5;
-		dst_offs = ((SCREEN_HEIGHT-dst_h)/2) * SCREEN_PITCH;
+		dst_offs = ((SCREEN_HEIGHT-dst_h) / 2) * SCREEN_PITCH;
 
 		if (dst_h > SCREEN_HEIGHT) {
 			dst_w = SCREEN_HEIGHT * current_aspect_ratio + 0.5;
 			dst_h = SCREEN_HEIGHT;
-			dst_offs = ((SCREEN_WIDTH-dst_w)/2) * SCREEN_BPP;
-		}
-	/*} else if (scale_size == SCALE_SIZE_NONE) {
-		unsigned dst_x = ((SCREEN_WIDTH - w) * SCREEN_BPP / 2);
-		unsigned dst_y = ((SCREEN_HEIGHT - h) / 2);
-		dst_offs = dst_y * SCREEN_PITCH + dst_x;
-
-		if (pitch == SCREEN_PITCH) {
-			scaler = scale_memcpy;
-		} else {
-			scaler = scale_1x;
+			dst_offs = ((SCREEN_WIDTH-dst_w) / 2) * SCREEN_BPP;
 		}
 
-		return;*/
+	} else if (scale_size == SCALE_SIZE_CROPPED) {
+		scale_compute_zoom(w, h, pitch, 100);
+
+	} else if (scale_size == SCALE_SIZE_MANUAL) {
+		scale_compute_zoom(w, h, pitch, zoom_level);
 	}
 
 	if (!scaler && w == 160 && h == 144) {
-		if (scale_size == SCALE_SIZE_ASPECT && scale_filter == SCALE_FILTER_SHARP) {
+		if (scale_size == SCALE_SIZE_SCALED && scale_filter == SCALE_FILTER_SHARP) {
 			unsigned dst_x = ((SCREEN_WIDTH - 240) * SCREEN_BPP / 2);
 			unsigned dst_y = ((SCREEN_HEIGHT - 216) / 2);
 			dst_offs = dst_y * SCREEN_PITCH + dst_x;
@@ -526,15 +761,13 @@ static void scale_select_scaler(unsigned w, unsigned h, size_t pitch) {
 	if (SCREEN_WIDTH == 320 && scale_filter == SCALE_FILTER_SHARP) {
 		if (!scaler && w == 240 && h == 160) {
 			scaler = scale_sharp_240x160_320xXXX;
-			return;
 		}
 
 		if (!scaler &&
 		    w == 256 &&
-		    (current_aspect_ratio == 4.0f / 3.0f || scale_size == SCALE_SIZE_FULL))
+		    (current_aspect_ratio == 4.0f / 3.0f || scale_size == SCALE_SIZE_STRETCHED))
 		{
 			scaler = scale_sharp_256xXXX_320xXXX;
-			return;
 		}
 	}
 
@@ -569,7 +802,7 @@ static void scale_select_scaler(unsigned w, unsigned h, size_t pitch) {
 		scaler = scale_1x;
 	}
 
-	if (scale_size == SCALE_SIZE_CROP) {
+	if (scale_size == SCALE_SIZE_NATIVE) {
 		if (w <= SCREEN_WIDTH && h <= SCREEN_HEIGHT) {
 			crop_scaler = scale_1x;
 		} else {
@@ -583,7 +816,15 @@ void scale_update_scaler(void) {
 	scale_select_scaler(prev.w, prev.h, prev.pitch);
 }
 
-void scale(unsigned w, unsigned h, size_t pitch, const void *src, void *dst) {
+void scale(unsigned w, unsigned h, size_t pitch, const void *src, void *dst)
+{
+	video_width  = w;
+	video_height = h;
+
+	static uint16_t *tmpbuf = NULL;
+	static size_t tmp_size = 0;
+
+	// Re-select the scaling function if the source dimensions or pitch have changed
 	if (w != prev.w || h != prev.h || pitch != prev.pitch) {
 		PA_INFO("Dimensions changed to %dx%d\n", w, h);
 		scale_select_scaler(w, h, pitch);
@@ -591,5 +832,53 @@ void scale(unsigned w, unsigned h, size_t pitch, const void *src, void *dst) {
 		prev.w = w; prev.h = h; prev.pitch = pitch;
 	}
 
-	scaler(w, h, pitch, src, dst);
+	// ---- Normal (non-rotated) rendering ----
+	if (!rotate_display) {
+		// If requested, clear whole framebuffer once to avoid residues from previous modes/zooms.
+		if (need_full_clear) {
+			memset(dst, 0, (size_t)SCREEN_PITCH * (size_t)SCREEN_HEIGHT);
+			need_full_clear = 0;
+		}
+
+		// Directly render the scaled frame into the destination buffer
+		// (scaler should overwrite the rendered region)
+		scaler(w, h, pitch, src, dst);
+		return;
+	}
+
+	// ----- Rotated rendering -----
+	if (rotate_display != 0) {
+		/* allocate tmpbuf with the actual framebuffer stride (bytes per line) to match scalers */
+		size_t needed = (size_t)SCREEN_PITCH * (size_t)SCREEN_HEIGHT; /* bytes */
+		if (tmp_size < needed) {
+			free(tmpbuf);
+			tmpbuf = malloc(needed);
+			if (!tmpbuf) {
+				PA_ERROR("malloc failed for tmpbuf (%zu bytes)\n", needed);
+				/* fallback: render directly to dst (may crash otherwise) */
+				scaler(w, h, pitch, src, dst);
+				return;
+			}
+			tmp_size = needed;
+		}
+
+		/* Clear tmpbuf so regions not written by scaler remain black (prevents residues) */
+		memset(tmpbuf, 0, needed);
+
+		/* Step 1 : render normally into tmpbuf (scalers expect dst stride == SCREEN_PITCH) */
+		scaler(w, h, pitch, src, tmpbuf);
+
+		/* Step 2 : apply selected rotation. tmpbuf uses SCREEN_PITCH stride so rotation functions must read with that stride. */
+		switch (rotate_display) {
+			case 1: // 90° CW
+				rotate_90cw(SCREEN_WIDTH, SCREEN_HEIGHT, (const uint16_t *)tmpbuf, (uint16_t *)dst);
+				break;
+			case 2: // 180°
+				rotate_180(SCREEN_WIDTH, SCREEN_HEIGHT, (const uint16_t *)tmpbuf, (uint16_t *)dst);
+				break;
+			case 3: // 270° CW
+				rotate_270cw(SCREEN_WIDTH, SCREEN_HEIGHT, (const uint16_t *)tmpbuf, (uint16_t *)dst);
+				break;
+		}
+	}
 }

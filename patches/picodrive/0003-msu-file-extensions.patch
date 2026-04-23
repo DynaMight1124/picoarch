@@ -1,0 +1,26 @@
+diff --git a/platform/common/emu.c b/platform/common/emu.c
+index d6b95bec..43d7d6ef 100644
+--- a/platform/common/emu.c
++++ b/platform/common/emu.c
+@@ -247,7 +247,7 @@ static const char *find_msu(const char *cd_fname)
+ 	int i;
+ 
+ 	// look for MSU.MD or MD+ rom file. XXX another extension list? ugh...
+-	static const char *md_exts[] = { "gen", "smd", "md", "32x" };
++	static const char *md_exts[] = { "gen", "smd", "md", "32x", "zip" };
+ 	char *ext = strrchr(cd_fname, '.');
+ 	int extpos = ext ? ext-cd_fname : strlen(cd_fname);
+ 	strcpy(static_buff, cd_fname);
+diff --git a/platform/libretro/libretro.c b/platform/libretro/libretro.c
+index 7b6edc26..f7ecab41 100644
+--- a/platform/libretro/libretro.c
++++ b/platform/libretro/libretro.c
+@@ -1333,7 +1333,7 @@ static const char *find_msu(const char *cd_fname)
+    int i;
+ 
+    // look for MSU.MD rom file. XXX another extension list? ugh...
+-   static const char *md_exts[] = { "gen", "smd", "md", "32x" };
++   static const char *md_exts[] = { "gen", "smd", "md", "32x", "zip" };
+    char *ext = strrchr(cd_fname, '.');
+    int extpos = ext ? ext-cd_fname : strlen(cd_fname);
+    strcpy(path, cd_fname);

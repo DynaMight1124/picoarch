@@ -14,13 +14,21 @@ int limit_frames;
 int enable_audio;
 int enable_drc;
 int use_srm;
+int rotate_display = 0; // 0 = normal, 1 = 90° CW, 2 = 180°, 3 = 270° CW
+int zoom_level = 0; // 0–100
+pan_display_t pan_display = PAN_DISPLAY_OFF;
 unsigned audio_buffer_size;
 enum scale_size scale_size;
 enum scale_filter scale_filter;
 
 struct core_options core_options;
 
+#ifdef FUNKEY_S
 #define MAX_DESC_LEN 20
+#else
+#define MAX_DESC_LEN 30
+#endif
+
 #define MAX_LINE_LEN SCREEN_WIDTH / 6
 #define MAX_LINES 4
 

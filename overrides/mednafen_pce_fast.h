@@ -1,6 +1,6 @@
 #include "overrides.h"
 
-static const struct core_override_option beetle_pce_fast_core_option_overrides[] = {
+static const struct core_override_option mednafen_pce_fast_core_option_overrides[] = {
 	{
 		.key = "pce_fast_frameskip",
 		.info = "Skip frames to avoid audio crackling. Improves performance at the expense of visual smoothness.",
@@ -69,6 +69,18 @@ static const struct core_override_option beetle_pce_fast_core_option_overrides[]
 		}
 	},
 	{
+		.key = "pce_fast_adpcmvolume",
+		.desc = "(CD) ADPCM Volume"
+	},
+	{
+		.key = "pce_fast_cddavolume",
+		.desc = "(CD) CDDA Volume"
+	},
+	{
+		.key = "pce_fast_cdpsgvolume",
+		.desc = "(CD) PSG Volume"
+	},
+	{
 		.key = "pce_fast_ocmultiplier",
 		.desc = "Overclock (Restart)",
 		.info = "Overclock the emulated CPU by selected multiplier.",
@@ -109,7 +121,7 @@ static const struct core_override_option beetle_pce_fast_core_option_overrides[]
 	{ NULL }
 };
 
-me_bind_action beetle_pce_fast_ctrl_actions[] =
+me_bind_action mednafen_pce_fast_ctrl_actions[] =
 {
 	{ "UP       ",  1 << RETRO_DEVICE_ID_JOYPAD_UP},
 	{ "DOWN     ",  1 << RETRO_DEVICE_ID_JOYPAD_DOWN },
@@ -127,16 +139,16 @@ me_bind_action beetle_pce_fast_ctrl_actions[] =
 	{ NULL,       0 }
 };
 
-const struct core_override_fast_forward beetle_pce_fast_fast_forward = {
+const struct core_override_fast_forward mednafen_pce_fast_fast_forward = {
 	.type_key = "pce_fast_frameskip",
 	.type_value = "auto",
 	.interval_key = "pce_fast_frameskip_interval",
 };
 
-#define beetle_pce_fast_overrides {                                    \
-	.core_name = "beetle-pce-fast",                                \
-	.fast_forward = &beetle_pce_fast_fast_forward,                 \
-	.actions = beetle_pce_fast_ctrl_actions,                       \
-	.action_size = array_size(beetle_pce_fast_ctrl_actions),       \
-	.options = beetle_pce_fast_core_option_overrides               \
+#define mednafen_pce_fast_overrides {                                    \
+	.core_name = "mednafen_pce_fast",                                \
+	.fast_forward = &mednafen_pce_fast_fast_forward,                 \
+	.actions = mednafen_pce_fast_ctrl_actions,                       \
+	.action_size = array_size(mednafen_pce_fast_ctrl_actions),       \
+	.options = mednafen_pce_fast_core_option_overrides               \
 }

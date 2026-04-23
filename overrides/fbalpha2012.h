@@ -46,6 +46,10 @@ static const struct core_override_option fbalpha2012_core_option_overrides[] = {
 		.key = "fbneo-neogeo-mode",
 		.retro_var_value = "Neo Geo Mode; MVS|AES|UNIBIOS|DIPSWITCH"
 	},
+	{
+		.key = "fbneo-vertical-mode",
+		.blocked = true
+	},
 	{ NULL }
 };
 

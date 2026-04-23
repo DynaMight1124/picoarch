@@ -1,0 +1,14 @@
+diff --git a/src/libretro/libretro.cpp b/src/libretro/libretro.cpp
+index f31c073..ee82a27 100644
+--- a/src/libretro/libretro.cpp
++++ b/src/libretro/libretro.cpp
+@@ -1162,6 +1162,9 @@ void retro_run(void)
+ 	wl_input_state_t input;
+ 	long long framestarttic = GetTimeCount();
+ 
++	// This is needed to get past the init/loading screen
++	frame_time_cb(0);
++
+ 	// When we load something we end up having very slow
+ 	// retro_run. Then next invocation to retro_run
+ 	// tries to cover the same length of time (tics) with a

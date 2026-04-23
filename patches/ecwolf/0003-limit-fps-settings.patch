@@ -1,0 +1,35 @@
+diff --git a/src/libretro/libretro_core_options.h b/src/libretro/libretro_core_options.h
+index f21447c..405ce65 100644
+--- a/src/libretro/libretro_core_options.h
++++ b/src/libretro/libretro_core_options.h
+@@ -134,30 +134,9 @@ struct retro_core_option_definition option_defs_us[] = {
+ 		"Refresh rate (FPS)",
+ 		"Configure the FPS.",
+ 		{
+-			{ "7", NULL },
+-			{ "7.8", NULL },
+-			{ "8.8", NULL },
+-			{ "10", NULL },
+-			{ "14", NULL },
+-			{ "17.5", NULL },
+-			{ "25", NULL },
+-			{ "30", NULL },
+ 			{ "35", NULL },
+ 			{ "50", NULL },
+ 			{ "60", NULL },
+-			{ "70", NULL },
+-			{ "72", NULL },
+-			{ "75", NULL },
+-			{ "90", NULL },
+-			{ "100", NULL },
+-			{ "119", NULL },
+-			{ "120", NULL },
+-			{ "140", NULL },
+-			{ "144", NULL },
+-			{ "240", NULL },
+-			{ "244", NULL },
+-			{ "300", NULL },
+-			{ "360", NULL },
+ 			{ NULL, NULL },
+ 		},
+ #if defined(PSP) || defined(RS90)

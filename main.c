@@ -40,6 +40,10 @@ static emu_action eaction = EACTION_NONE;
 static uint32_t vsyncs;
 static uint32_t renders;
 
+extern int video_width;
+extern int video_height;
+extern int need_full_clear;
+
 #define UNDERRUN_THRESHOLD 50
 
 static void toggle_fast_forward(int force_off)
@@ -212,33 +216,11 @@ void set_defaults(void)
 	enable_drc = 1;
 	use_srm = 0;
 	audio_buffer_size = 5;
-	scale_size = SCALE_SIZE_FULL;
+	scale_size = SCALE_SIZE_SCALED;
 	scale_filter = SCALE_FILTER_SMOOTH;
 
-	/* Sets better defaults for small screen */
-	if (SCREEN_WIDTH == 240) {
-		scale_size = SCALE_SIZE_CROP;
-		scale_filter = SCALE_FILTER_SMOOTH;
-
-		if (!strcmp(core_name, "gambatte") ||
-		    !strcmp(core_name, "mame2000")) {
-			scale_size = SCALE_SIZE_ASPECT;
-			scale_filter = SCALE_FILTER_SMOOTH;
-		}
-
-		if (!strcmp(core_name, "fake-08")) {
-			scale_size = SCALE_SIZE_ASPECT;
-			scale_filter = SCALE_FILTER_NEAREST;
-		}
-
-		if (!strcmp(core_name, "pcsx_rearmed") ||
-		    !strcmp(core_name, "picodrive")) {
-			scale_size = SCALE_SIZE_FULL;
-			scale_filter = SCALE_FILTER_SMOOTH;
-		}
-	}
-
 	scale_update_scaler();
+	need_full_clear = 1;
 
 	if (current_audio_buffer_size < audio_buffer_size)
 		current_audio_buffer_size = audio_buffer_size;
@@ -359,6 +341,14 @@ void load_config_keys(void)
 			if (defbinds[IN_BIND_OFFS(i, IN_BINDTYPE_EMU)] == 1 << EACTION_NEXT_SCALER) {
 				in_bind_key(0, i, 1 << EACTION_NEXT_SCALER, IN_BINDTYPE_EMU, 0);
 			}
+			/* Force fn+j to be bound to decrease zoom level (-10%) */
+			if (defbinds[IN_BIND_OFFS(i, IN_BINDTYPE_EMU)] == 1 << EACTION_PREVIOUS_ZOOM_STEP) {
+				in_bind_key(0, i, 1 << EACTION_PREVIOUS_ZOOM_STEP, IN_BINDTYPE_EMU, 0);
+			}
+			/* Force fn+i to be bound to increase zoom level (+10%) */
+			if (defbinds[IN_BIND_OFFS(i, IN_BINDTYPE_EMU)] == 1 << EACTION_NEXT_ZOOM_STEP) {
+				in_bind_key(0, i, 1 << EACTION_NEXT_ZOOM_STEP, IN_BINDTYPE_EMU, 0);
+			}
 #endif
 		}
 	}
@@ -467,6 +457,72 @@ static void perform_emu_action(void) {
 	case EACTION_NEXT_SCALER:
 		FK_NextAspectRatio();
 		break;
+	case EACTION_PREVIOUS_ZOOM_STEP:
+		if (zoom_level >= 0) {
+			zoom_level = MAX(0, zoom_level - 10);
+			/* force manual mode */
+			scale_size = SCALE_SIZE_MANUAL;
+			scale_filter = SCALE_FILTER_SMOOTH;
+			scale_update_scaler();
+			need_full_clear = 1;
+			/* ---- notification FunKey shell ---- */
+			char shell_cmd[128];
+			snprintf(shell_cmd, sizeof(shell_cmd),
+			"%s %d \"    DISPLAY MODE: MANUAL %d%%%%\"",
+			SHELL_CMD_NOTIF_SET, NOTIF_SECONDS_DISP, zoom_level);
+			system(shell_cmd);
+		}
+		break;
+	case EACTION_NEXT_ZOOM_STEP:
+		if (zoom_level <= 100) {
+			zoom_level = MIN(100, zoom_level + 10);
+			/* force manual mode */
+			scale_size = SCALE_SIZE_MANUAL;
+			scale_filter = SCALE_FILTER_SMOOTH;
+			scale_update_scaler();
+			need_full_clear = 1;
+			/* ---- notification FunKey shell ---- */
+			char shell_cmd[128];
+			snprintf(shell_cmd, sizeof(shell_cmd),
+			"%s %d \"    DISPLAY MODE: MANUAL %d%%%%\"",
+			SHELL_CMD_NOTIF_SET, NOTIF_SECONDS_DISP, zoom_level);
+			system(shell_cmd);
+		}
+		break;
+	case EACTION_PAN_DISPLAY_LEFT:
+		if (pan_display == PAN_DISPLAY_LEFT) {
+			pan_display = PAN_DISPLAY_RIGHT;
+			scale_update_scaler();
+			need_full_clear = 1;
+			break;
+		} else if (pan_display == PAN_DISPLAY_RIGHT) {
+			pan_display = PAN_DISPLAY_OFF;
+			scale_update_scaler();
+			need_full_clear = 1;
+			break;
+		} else {
+			pan_display = PAN_DISPLAY_LEFT;
+			scale_update_scaler();
+			need_full_clear = 1;
+			break;
+		}
+	case EACTION_PAN_DISPLAY_RIGHT:
+		if (pan_display == PAN_DISPLAY_RIGHT) {
+			pan_display = PAN_DISPLAY_LEFT;
+			scale_update_scaler();
+			need_full_clear = 1;
+			break;
+		} else if (pan_display == PAN_DISPLAY_LEFT) {
+			pan_display = PAN_DISPLAY_OFF;
+			scale_update_scaler();
+			need_full_clear = 1;
+			break;
+		} else {
+			pan_display = PAN_DISPLAY_RIGHT;
+			scale_update_scaler();
+			need_full_clear = 1;
+			break;
+		}
 #endif
 	case EACTION_QUIT:
 		should_quit = 1;

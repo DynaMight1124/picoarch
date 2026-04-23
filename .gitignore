@@ -10,7 +10,6 @@ picoarch
 /profile
 /system
 
-/beetle-pce-fast
 /bluemsx
 /dosbox-pure
 /fake-08
@@ -22,7 +21,9 @@ picoarch
 /gpsp
 /mame2000
 /mame2003_plus
+/mednafen_lynx
 /mednafen_ngp
+/mednafen_pce_fast
 /mednafen_wswan
 /pcsx_rearmed
 /picodrive

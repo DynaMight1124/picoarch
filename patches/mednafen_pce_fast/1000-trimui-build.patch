@@ -37,10 +37,10 @@ index f52a3ae..ab0594a 100644
  endif
  
 +ifeq ($(PROFILE), GENERATE)
-+   CFLAGS  += -fprofile-generate=./profile/beetle-pce-fast
++   CFLAGS  += -fprofile-generate=./profile/mednafen_pce_fast
 +   LDFLAGS += -lgcov
 +else ifeq ($(PROFILE), APPLY)
-+   CFLAGS  += -fprofile-use -fprofile-dir=../profile/beetle-pce-fast -fbranch-probabilities
++   CFLAGS  += -fprofile-use -fprofile-dir=../profile/mednafen_pce_fast -fbranch-probabilities
 +endif
 +
  ifneq (,$(findstring msvc,$(platform)))

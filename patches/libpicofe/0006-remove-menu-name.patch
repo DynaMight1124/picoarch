@@ -1,0 +1,19 @@
+diff --git a/menu.c b/menu.c
+index e91f84a..5c935d7 100644
+--- a/menu.c
++++ b/menu.c
+@@ -1407,10 +1407,10 @@ static void draw_key_config(const me_bind_action *opts, int opt_cnt, int player_
+ 	if (y < 0)
+ 		y = 0;
+ 	menu_draw_begin(1, 0);
+-	if (player_idx >= 0)
+-		text_out16(x, y, "Player %i controls", player_idx + 1);
+-	else
+-		text_out16(x, y, "Emulator controls");
++	//if (player_idx >= 0)
++	//	text_out16(x, y, "Player %i controls", player_idx + 1);
++	//else
++	//	text_out16(x, y, "Emulator controls");
+ 
+ 	y += 2 * me_mfont_h;
+ 	menu_draw_selection(x - me_mfont_w * 2, y + sel * me_mfont_h, w + 2 * me_mfont_w);
