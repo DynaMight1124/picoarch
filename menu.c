@@ -698,7 +698,14 @@ static const char h_audio_buffer_size[]        =
 static const char h_scale_size[]        =
 	"How much to stretch the screen when scaling. NATIVE\n"
 	"does no stretching. SCALED uses the correct aspect\n"
-	"ratio. STRETCHED uses the whole screen.";
+	"ratio. STRETCHED uses the whole screen. CROPPED allows\n"
+	"resizing beyond screen limit. MANUAL allows manual resizing.";
+
+static const char h_zoom_level[]        =
+	"Control the zoom level of the MANUAL\n"
+	"mode. Hotkeys Fn+left/right can be used\n"
+	"to change the zoom level (+/-10%) and\n"
+	"switch automatically to MANUAL mode.";
 
 static const char h_scale_filter[]        =
 	"When stretching, how missing pixels are filled.\n"
@@ -710,11 +717,40 @@ static const char h_use_srm[]        =
 	"compatibility with mainline RetroArch saves.\n"
 	"Save file compression needs to be off in RetroArch.";
 
+static const char h_rotate_display[] =
+	"Screen orientation. Rotates the display\n"
+	"by 90, 180 or 270 degrees CLOCKWISE.";
+
 static const char *men_scale_size[] =
 {
 	"NATIVE",
 	"SCALED",
 	"STRETCHED",
+	"CROPPED",
+	"MANUAL",
+	NULL
+};
+
+static const char *men_rotate_display[] =
+{
+	"OFF",
+	"90CW",
+	"180CW",
+	"270CW",
+	NULL
+};
+
+static const char h_pan_display[] =
+	"Viewport position. Sets the focus on\n"
+	"the LEFT or on the RIGHT part of the\n"
+	"screen when the game width exceeds\n"
+	"the screen width.";
+
+static const char *men_pan_display[] =
+{
+	"OFF",
+	"LEFT",
+	"RIGHT",
 	NULL
 };
 #else
@@ -759,8 +795,8 @@ static const char h_rotate_display[] =
 static const char h_pan_display[] =
 	"Viewport position. Sets the focus on\n"
 	"the LEFT or on the RIGHT part of the\n"
-	"screen when the game width exceeds 240\n"
-	"pixels.";
+	"screen when the game width exceeds\n"
+	"the screen width.";
 
 static const char *men_scale_size[] =
 {

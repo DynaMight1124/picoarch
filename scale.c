@@ -483,7 +483,7 @@ static void scale_compute_zoom(unsigned w, unsigned h, size_t pitch, double zoom
 	 * --------------------------------------------------------- */
 	unsigned base_w = w;
 	unsigned base_h = h;
-	if (w <= 240) {
+	if (w <= SCREEN_WIDTH) {
 		/* native 1:1 base */
 		base_w = w;
 		base_h = h;
@@ -508,9 +508,11 @@ static void scale_compute_zoom(unsigned w, unsigned h, size_t pitch, double zoom
 	dst_h = base_h + (unsigned)((double)(full_crop_h - base_h) * zoom);
 	if (dst_w < 1) dst_w = 1;
 	if (dst_h < 1) dst_h = 1;
+
 	/* Compute base position (centered by default) */
 	int base_x = (SCREEN_WIDTH - (int)base_w) / 2;
 	int base_y = (SCREEN_HEIGHT - (int)base_h) / 2;
+
 	/* final target when zoom == 1:
 	 * - if virtual canvas wider than screen -> we will use crop (dst_x==0)
 	 * - otherwise center the virtual canvas inside the screen
@@ -518,16 +520,20 @@ static void scale_compute_zoom(unsigned w, unsigned h, size_t pitch, double zoom
 	int final_dst_x = (dst_w > SCREEN_WIDTH) ? 0 : (SCREEN_WIDTH - (int)dst_w) / 2;
 	int final_dst_y = (SCREEN_HEIGHT - (int)dst_h) / 2;
 	if (final_dst_y < 0) final_dst_y = 0;
+
 	/* Interpolate *centers* for symmetry and to avoid integer bias */
 	double base_cx = base_x + ((double)base_w / 2.0);
 	double base_cy = base_y + ((double)base_h / 2.0);
 	double final_cx = final_dst_x + ((double)dst_w / 2.0);
 	double final_cy = final_dst_y + ((double)dst_h / 2.0);
+
 	double cx = base_cx + (final_cx - base_cx) * zoom;
 	double cy = base_cy + (final_cy - base_cy) * zoom;
+
 	/* ideal dst (if we could move framebuffer) */
 	int dst_x_ideal = (int)(cx - ((double)dst_w / 2.0) + 0.5);
 	int dst_y_ideal = (int)(cy - ((double)dst_h / 2.0) + 0.5);
+
 	/* By default we will write into framebuffer at centered position.
 	 * But if dst_w > SCREEN_WIDTH we must use crop path (dst_x==0)
 	 * and shift source (src_offs) so the visible window is centered.
@@ -538,13 +544,15 @@ static void scale_compute_zoom(unsigned w, unsigned h, size_t pitch, double zoom
 		PA_INFO("[ZOOMDBG] base_cx=%.2f final_cx=%.2f cx=%.2f dst_x_ideal=%d dst_y_ideal=%d\n",
 				base_cx, final_cx, cx, dst_x_ideal, dst_y_ideal);
 	}
+
 	/* Compute visible source width (how many source pixels correspond to visible SCREEN_WIDTH
 	 * when the virtual canvas is full_crop_w). This is used to bound the source offset.
 	 */
 	unsigned visible_w = SCREEN_WIDTH;
-	double visible_src_w = (full_crop_w > 0)
-		? (double)w * ((double)visible_w / (double)full_crop_w)
-		: (double)w;
+	double src_pixels_per_virtual = (double)w / (double)dst_w;
+	double visible_src_w = (double)w * ((double)visible_w / (double)dst_w);
+
+	w_offs = 0;
 	/* Map the desired virtual viewport into source coordinates when cropping. */
 	if (dst_w > SCREEN_WIDTH) {
 		/* Virtual canvas is larger than the screen -> we must crop.
@@ -558,10 +566,11 @@ static void scale_compute_zoom(unsigned w, unsigned h, size_t pitch, double zoom
 		 * This ensures the visible part is always centered.
 		 */
 		double Vx = ((double)dst_w - (double)SCREEN_WIDTH) / 2.0;
-		double src_pixels_per_virtual = (double)w / (double)dst_w;
 		double src_off_pixels = Vx * src_pixels_per_virtual;
+
 		/* Compute byte offset and clamp */
 		int new_src_offs = (int)(src_off_pixels * (double)SCREEN_BPP + 0.5);
+
 		// Apply pan display offset
 		if (pan_display == PAN_DISPLAY_LEFT) {
 			new_src_offs = 0; // Show leftmost part
@@ -569,32 +578,43 @@ static void scale_compute_zoom(unsigned w, unsigned h, size_t pitch, double zoom
 			// Calculate the offset to show the rightmost part
 			new_src_offs = (int)((dst_w - SCREEN_WIDTH) * src_pixels_per_virtual * SCREEN_BPP);
 		}
+
 		/* clamp to valid source range (in bytes) */
 		int max_src_off_bytes = (int)((double)w - visible_src_w) * SCREEN_BPP;
 		if (new_src_offs < 0) new_src_offs = 0;
 		if (new_src_offs > max_src_off_bytes) new_src_offs = max_src_off_bytes;
+
 		/* Align to pixel boundary */
 		if (new_src_offs % SCREEN_BPP) {
 			new_src_offs -= (new_src_offs % SCREEN_BPP);
 			if (new_src_offs < 0) new_src_offs = 0;
 		}
 		src_offs = new_src_offs;
+
+		/* adjust source width and destination width for the scaler */
+		w_offs = (int)(visible_src_w + 0.5) - w;
+		dst_w = SCREEN_WIDTH;
+
 		/* destination must be left-aligned for crop path */
 		dst_offs = 0; /* dst_x will be added below */
 		dst_x_ideal = 0; /* ensure we don't try to write at dst_x */
+
 		if (zoom_debug) {
 			PA_INFO("[ZOOMDBG] CROP path: Vx=%.2f src_pixels_per_virtual=%.6f src_off_pixels=%.2f src_offs=%d max_src=%d\n",
 					Vx, src_pixels_per_virtual, src_off_pixels, src_offs, max_src_off_bytes);
 		}
 	}
+
 	/* Compute final dst_x/dst_y to write into framebuffer.
 	 * If we are in crop path dst_x_ideal is now clamped but not forced to 0.
 	 */
 	int dst_x = dst_x_ideal;
 	int dst_y = dst_y_ideal;
+
 	/* Safety clamp final dst coords to visible framebuffer */
 	if (dst_x < 0) dst_x = 0;
 	if (dst_y < 0) dst_y = 0;
+
 	if ((size_t)(dst_x + dst_w) > (size_t)SCREEN_WIDTH) {
 		/* clamp to avoid writing beyond framebuffer when not in crop path */
 		if ((int)dst_w <= SCREEN_WIDTH)
@@ -602,6 +622,7 @@ static void scale_compute_zoom(unsigned w, unsigned h, size_t pitch, double zoom
 		else
 			dst_x = 0;
 	}
+
 	/* Final dst_offs in bytes */
 	dst_offs = dst_y * SCREEN_PITCH + dst_x * SCREEN_BPP;
 	if (zoom_debug) {
@@ -758,7 +779,7 @@ static void scale_select_scaler(unsigned w, unsigned h, size_t pitch) {
 		}
 	}
 
-	if (SCREEN_WIDTH == 320 && scale_filter == SCALE_FILTER_SHARP) {
+	if (SCREEN_WIDTH == 320 && scale_filter == SCALE_FILTER_SHARP && dst_w == 320) {
 		if (!scaler && w == 240 && h == 160) {
 			scaler = scale_sharp_240x160_320xXXX;
 		}
